@@ -187,6 +187,8 @@ export interface DashboardData {
   wakePrediction: WakePrediction;
   feedingSuggestion: FeedingSuggestion | null;
   latestTemperature: Pick<TemperatureVo, 'temperature' | 'measureTime'> | null;
+  /** 最新一次身高/体重测量（首页月龄旁展示） */
+  latestGrowth: LatestGrowth | null;
 }
 
 export interface WakePrediction {
@@ -307,6 +309,65 @@ export const TEMP_STATUS_LABEL: Record<TempStatus, string> = {
   fever: '发热',
   high: '高温',
 };
+
+// ============ 身高体重成长记录 ============
+export interface GrowthRecordVo {
+  id: number;
+  babyId: number;
+  /** 身高(cm)，可空（当次可只记体重） */
+  height: number | null;
+  /** 体重(kg)，可空（当次可只记身高） */
+  weight: number | null;
+  /** 头围(cm)，预留 */
+  headCircumference: number | null;
+  measureTime: string;
+  remark: string | null;
+  creatorId: number;
+  creator?: RecordCreator;
+  createdTime: string;
+  updatedTime?: string;
+}
+
+/** 首页展示的最新一次成长测量摘要 */
+export interface LatestGrowth {
+  height: number | null;
+  weight: number | null;
+  measureTime: string | null;
+}
+
+export type GrowthMetric = 'height' | 'weight';
+
+/** 趋势上的单个测量点（含该月龄参考区间与所处百分比） */
+export interface GrowthTrendPoint {
+  /** 测量日期 YYYY-MM-DD */
+  date: string;
+  /** 实测值（身高 cm / 体重 kg） */
+  value: number;
+  /** 测量时的精确月龄（含小数） */
+  monthAge: number;
+  /** 同龄参考低位 P3，超出标准覆盖范围时为 null */
+  low: number | null;
+  /** 同龄参考高位 P97，超出标准覆盖范围时为 null */
+  high: number | null;
+  /** 处于低位~高位区间的百分比 0–100；无参考区间时为 null；低于低位记 0、高于高位记 100 */
+  percent: number | null;
+}
+
+/** 身高/体重趋势：三条线（实测 + 参考高位 P97 + 参考低位 P3） */
+export interface GrowthTrendVo {
+  metric: GrowthMetric;
+  unit: 'cm' | 'kg';
+  /** X 轴：测量日期（MM-DD，跨年含年份） */
+  xAxis: string[];
+  actual: (number | null)[];
+  low: (number | null)[];
+  high: (number | null)[];
+  points: GrowthTrendPoint[];
+  /** 最新一次测量；无记录时为 null */
+  latest: GrowthTrendPoint | null;
+  /** 参考标准来源（WHO） */
+  sourceUrl: string;
+}
 
 // ============ 聚合记录 ============
 export interface DailyRecords {

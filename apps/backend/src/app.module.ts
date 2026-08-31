@@ -17,6 +17,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { IntervalModule } from './modules/interval/interval.module';
 import { ChartModule } from './modules/chart/chart.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { GrowthModule } from './modules/growth/growth.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AuthModule } from './modules/auth/auth.module';
     SupplementModule,
     ActivityModule,
     TemperatureModule,
+    GrowthModule,
     // 聚合层
     RecordModule,
     StatisticsModule,

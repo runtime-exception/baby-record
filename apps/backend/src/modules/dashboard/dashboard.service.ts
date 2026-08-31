@@ -31,7 +31,7 @@ export class DashboardService {
 
   async overview(babyId: number) {
     const now = new Date();
-    const [baby, lastFeeding, lastDiaper, lastSleep, latestTemperature] = await Promise.all([
+    const [baby, lastFeeding, lastDiaper, lastSleep, latestTemperature, latestGrowth] = await Promise.all([
       this.prisma.baby.findUnique({ where: { id: babyId }, select: { birthday: true } }),
       this.prisma.feeding.findFirst({
         where: { babyId, feedingTime: { lte: now } },
@@ -41,6 +41,7 @@ export class DashboardService {
       this.prisma.diaper.findFirst({ where: { babyId, changeTime: { lte: now } }, orderBy: { changeTime: 'desc' } }),
       this.prisma.sleep.findFirst({ where: { babyId, startTime: { lte: now } }, orderBy: { startTime: 'desc' } }),
       this.prisma.temperature.findFirst({ where: { babyId, measureTime: { lte: now } }, orderBy: { measureTime: 'desc' } }),
+      this.prisma.growthRecord.findFirst({ where: { babyId }, orderBy: { measureTime: 'desc' } }),
     ]);
 
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
@@ -57,6 +58,13 @@ export class DashboardService {
       feedingSuggestion: this.feedingSuggestion(lastFeeding, ageMonths, feedingGuide),
       latestTemperature: latestTemperature
         ? { temperature: Number(latestTemperature.temperature), measureTime: latestTemperature.measureTime.toISOString() }
+        : null,
+      latestGrowth: latestGrowth
+        ? {
+            height: latestGrowth.height === null ? null : Number(latestGrowth.height),
+            weight: latestGrowth.weight === null ? null : Number(latestGrowth.weight),
+            measureTime: latestGrowth.measureTime.toISOString(),
+          }
         : null,
     };
   }

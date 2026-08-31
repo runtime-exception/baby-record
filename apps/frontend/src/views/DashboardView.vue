@@ -61,6 +61,16 @@ const quickActions = [
 ];
 
 const latestTemperature = computed(() => dashStore.data?.latestTemperature || null);
+/** 首页月龄旁展示的最新身高/体重（来自最近一次成长测量） */
+const latestGrowth = computed(() => dashStore.data?.latestGrowth || null);
+const growthSummary = computed(() => {
+  const g = latestGrowth.value;
+  if (!g) return null;
+  const parts: string[] = [];
+  if (g.height != null) parts.push(`📏 ${g.height.toFixed(1)}cm`);
+  if (g.weight != null) parts.push(`⚖️ ${g.weight.toFixed(1)}kg`);
+  return parts.length ? parts.join(' · ') : null;
+});
 const temperatureClass = computed(() => {
   if (!latestTemperature.value) return 'text-ios-secondary';
   return { normal: 'text-ios-green', watch: 'text-ios-orange', fever: 'text-ios-pink', high: 'text-black font-bold' }[getTempStatus(latestTemperature.value.temperature)];
@@ -189,7 +199,7 @@ const feedingAdvice = computed(() => {
         <div>
           <h1 class="text-2xl font-bold text-ios-label">{{ baby.nickname || baby.name }}</h1>
           <p class="text-sm text-ios-secondary mt-0.5">
-            {{ baby.age.monthAgeText }} · 出生 {{ baby.birthday }}
+            {{ baby.age.monthAgeText }}<template v-if="growthSummary"> · {{ growthSummary }}</template>
           </p>
         </div>
       </div>

@@ -27,6 +27,16 @@
 
 > diaper / supplement / activity 路径分别替换为 `/diapers` `/supplements` `/activities`。
 
+### 身高体重记录（growth）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/growths` | 新增身高/体重记录（height 与 weight 至少一项） |
+| GET | `/growths` | 列表（babyId / 时间范围 / 分页） |
+| GET | `/growths/latest` | 最新一次测量（首页展示） |
+| GET | `/growths/trend` | 趋势：`babyId` + `metric`(height/weight)，返回实测 + 同龄参考 P97/P3 + 区间百分比 |
+| GET / PATCH / DELETE | `/growths[/:id]` | 详情/修改/删除 |
+
 ### 睡眠特殊接口
 
 | 方法 | 路径 | 说明 |

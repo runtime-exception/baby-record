@@ -26,6 +26,7 @@
 
 - 👶 **多宝宝 / 多记录人**：所有记录挂 `baby_id` 与 `creator_id`，支持多宝宝、多家庭成员（爸爸/妈妈/爷爷奶奶/姥姥姥爷）协同记录。
 - 📝 **六大记录域**：喂养、睡眠、换尿布、补剂、体温、活动事件；睡眠支持「开始/结束」快捷计时录入。
+- 📏 **身高体重与成长趋势**：在「其他」中记录身高/体重，统计页按月龄叠加 WHO 儿童生长标准的同龄高位（P97）/低位（P3）参考曲线，并显示宝宝处于参考区间的百分比；首页月龄旁直接展示最新测量。
 - 📊 **统计与可视化**：按日 / 7 天 / 30 天 / 自定义区间聚合统计，前端基于 ECharts 呈现趋势图与仪表盘。
 - 🧩 **领域驱动模块化**：每个业务域自成 NestJS 模块，统计 / 仪表盘 / 间隔分析作为只读聚合层复用底层事件。
 - 🗄️ **原始事件优先**：保留完整原始事件（不丢弃字段、不只存聚合结果），为生长曲线与 AI 分析留足数据底座。
@@ -204,6 +205,7 @@ pnpm dev           # 即 pnpm dev:frontend
 | sleep | `/sleeps` | 睡眠 CRUD + `start` / `:id/end` 计时录入 |
 | supplement | `/supplements` | 补剂 CRUD |
 | temperature | `/temperatures` | 体温记录 |
+| growth | `/growths` | 身高体重记录、趋势（同龄参考 P97/P3 + 区间百分比） |
 | activity | `/activities` | 活动事件 CRUD |
 | records | `/records` | 聚合查询（`daily` / `range`） |
 | statistics | `/statistics` | 区间统计（today/7d/30d/custom） |
@@ -225,7 +227,7 @@ pnpm dev           # 即 pnpm dev:frontend
 | `supplement` | name, amount, unit, take_time |
 | `temperature` | measure_time, temperature |
 | `activity` | event_type, event_time, description |
-| `growth_record`（预留） | measure_time, weight, height, head_circumference |
+| `growth_record` | measure_time, weight, height, head_circumference（身高/体重记录，统计页成长趋势数据源） |
 | `medical_record`（预留） | record_type, record_time, title |
 | `ai_analysis`（预留） | analysis_type, period_start/end, input(JSON), result(JSON) |
 
