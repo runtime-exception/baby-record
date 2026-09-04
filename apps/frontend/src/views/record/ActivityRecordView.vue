@@ -14,7 +14,7 @@ import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
 import { useDashboardStore } from '@/stores/dashboard';
 
-type Category = 'supplement' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'growth';
+type Category = 'supplement' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'height' | 'weight';
 
 const router = useRouter();
 const message = useMessage();
@@ -30,11 +30,13 @@ const categoryOptions: { label: string; value: Category; icon: string }[] = [
   { label: '翻身', value: 'turn', icon: '🔄' },
   { label: '洗澡', value: 'bath', icon: '🛁' },
   { label: '其他', value: 'other', icon: '✨' },
-  { label: '身高体重', value: 'growth', icon: '📏' },
+  { label: '身高', value: 'height', icon: '📏' },
+  { label: '体重', value: 'weight', icon: '⚖️' },
 ];
 
 const isSupplement = computed(() => category.value === 'supplement');
-const isGrowth = computed(() => category.value === 'growth');
+const isGrowth = computed(() => category.value === 'height' || category.value === 'weight');
+const isHeight = computed(() => category.value === 'height');
 
 // 补剂表单
 const supplementName = ref('维生素D');
@@ -73,7 +75,7 @@ const prefilled = ref(false);
 /** 滚轮是否被改动过（避免误存 50.0cm / 3.5kg 的初始占位） */
 const growthTouched = ref(false);
 
-const activityEventLabel: Record<Exclude<Category, 'supplement' | 'growth'>, string> = {
+const activityEventLabel: Record<Exclude<Category, 'supplement' | 'height' | 'weight'>, string> = {
   play: '玩耍',
   headup: '抬头',
   turn: '翻身',
@@ -133,14 +135,13 @@ async function onSubmit() {
       });
     } else if (isGrowth.value) {
       if (!prefilled.value && !growthTouched.value) {
-        message.warning('请先调整身高或体重数值');
+        message.warning(`请先调整${isHeight.value ? '身高' : '体重'}数值`);
         submitting.value = false;
         return;
       }
       await growthApi.create({
         babyId: baby.id,
-        height: heightCm.value,
-        weight: weightKg.value,
+        ...(isHeight.value ? { height: heightCm.value } : { weight: weightKg.value }),
         measureTime: new Date(growthTime.value).toISOString(),
         remark: growthRemark.value.trim() || undefined,
         creatorId: user.id,
@@ -150,7 +151,7 @@ async function onSubmit() {
     } else {
       await activityApi.create({
         babyId: baby.id,
-        eventType: activityEventLabel[category.value as Exclude<Category, 'supplement' | 'growth'>],
+        eventType: activityEventLabel[category.value as Exclude<Category, 'supplement' | 'height' | 'weight'>],
         eventTime: new Date(activityTime.value).toISOString(),
         description: description.value || undefined,
         creatorId: user.id,
@@ -217,9 +218,9 @@ async function onSubmit() {
         </div>
       </template>
 
-      <!-- 身高体重表单 -->
+      <!-- 身高/体重表单 -->
       <template v-else-if="isGrowth">
-        <div class="bg-ios-card rounded-3xl p-5 shadow-card">
+        <div v-if="isHeight" class="bg-ios-card rounded-3xl p-5 shadow-card">
           <div class="flex items-center justify-between">
             <p class="text-sm font-medium text-ios-secondary">📏 身高</p>
             <p class="num-display text-xl font-bold text-ios-label">{{ heightCm.toFixed(1) }}<span class="text-xs font-normal text-ios-secondary ml-1">cm</span></p>
@@ -230,7 +231,7 @@ async function onSubmit() {
           </div>
           <p class="text-xs text-ios-secondary text-center mt-3">有效范围 30.0 - 150.0 cm</p>
         </div>
-        <div class="bg-ios-card rounded-3xl p-5 shadow-card">
+        <div v-else class="bg-ios-card rounded-3xl p-5 shadow-card">
           <div class="flex items-center justify-between">
             <p class="text-sm font-medium text-ios-secondary">⚖️ 体重</p>
             <p class="num-display text-xl font-bold text-ios-label">{{ weightKg.toFixed(1) }}<span class="text-xs font-normal text-ios-secondary ml-1">kg</span></p>
