@@ -4,6 +4,11 @@ import { DateRangeUtil } from '../../common/utils/date-range.util';
 import { serialize } from '../../common/utils/serializer.util';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/enums/error-code.enum';
+import {
+  FoodAllergyObservations,
+  positiveSymptomLabels,
+  scoreAllergyObservations,
+} from '../food-allergy/allergy-score';
 
 /**
  * 聚合查询：按天 / 按范围返回全部类型记录
@@ -32,21 +37,43 @@ export class RecordService {
     const includeCreator = {
       creator: { select: { id: true, name: true, role: true } },
     } as const;
-    const [feeding, diaper, sleep, supplement, activity, temperature] = await Promise.all([
-      this.prisma.feeding.findMany({ where: { babyId, feedingTime: { gte: start, lte: end } }, orderBy: { feedingTime: 'desc' }, include: includeCreator }),
+    const [feeding, diaper, sleep, supplement, activity, temperature, foodAllergy] = await Promise.all([
+      this.prisma.feeding.findMany({
+        where: { babyId, feedingTime: { gte: start, lte: end } },
+        orderBy: { feedingTime: 'desc' },
+        include: { ...includeCreator, foods: { include: { food: true } } },
+      }),
       this.prisma.diaper.findMany({ where: { babyId, changeTime: { gte: start, lte: end } }, orderBy: { changeTime: 'desc' }, include: includeCreator }),
       this.prisma.sleep.findMany({ where: { babyId, startTime: { gte: start, lte: end } }, orderBy: { startTime: 'desc' }, include: includeCreator }),
       this.prisma.supplement.findMany({ where: { babyId, takeTime: { gte: start, lte: end } }, orderBy: { takeTime: 'desc' }, include: includeCreator }),
       this.prisma.activity.findMany({ where: { babyId, eventTime: { gte: start, lte: end } }, orderBy: { eventTime: 'desc' }, include: includeCreator }),
       this.prisma.temperature.findMany({ where: { babyId, measureTime: { gte: start, lte: end } }, orderBy: { measureTime: 'desc' }, include: includeCreator }),
+      this.prisma.foodAllergyRecord.findMany({
+        where: { babyId, exposureTime: { gte: start, lte: end } },
+        orderBy: { exposureTime: 'desc' },
+        include: { ...includeCreator, food: true },
+      }),
     ]);
     return {
-      feeding: serialize(feeding),
+      feeding: serialize(feeding.map((record) => ({
+        ...record,
+        foods: record.foods.map((item) => item.food),
+      }))),
       diaper: serialize(diaper),
       sleep: serialize(sleep),
       supplement: serialize(supplement),
       activity: serialize(activity),
       temperature: serialize(temperature),
+      foodAllergy: serialize(
+        foodAllergy.map((record) => {
+          const observations = record.observations as FoodAllergyObservations;
+          return {
+            ...record,
+            urgent: scoreAllergyObservations(observations).urgent,
+            positiveSymptoms: positiveSymptomLabels(observations),
+          };
+        }),
+      ),
     };
   }
 }

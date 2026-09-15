@@ -62,6 +62,12 @@ const routes: RouteRecordRaw[] = [
         meta: { tab: 'record' },
       },
       {
+        path: 'record/food-allergy/:id?',
+        name: 'record-food-allergy',
+        component: () => import('@/views/record/FoodAllergyRecordView.vue'),
+        meta: { tab: 'record' },
+      },
+      {
         path: 'statistics',
         name: 'statistics',
         component: () => import('@/views/StatisticsView.vue'),
@@ -71,6 +77,12 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         name: 'profile',
         component: () => import('@/views/ProfileView.vue'),
+        meta: { tab: 'profile' },
+      },
+      {
+        path: 'profile/foods',
+        name: 'profile-foods',
+        component: () => import('@/views/FoodManagementView.vue'),
         meta: { tab: 'profile' },
       },
       {

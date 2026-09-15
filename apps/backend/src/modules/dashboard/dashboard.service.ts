@@ -7,6 +7,7 @@ import { ErrorCode } from '../../common/enums/error-code.enum';
 import { FeedingType } from '@prisma/client';
 import { WakeWindowService } from './wake-window.service';
 import { FeedingGuideService, FeedingGuideConfig } from './feeding-guide.service';
+import { FoodAllergyObservations, positiveSymptomLabels } from '../food-allergy/allergy-score';
 
 export interface StatusCard {
   lastTime: string | null;
@@ -31,10 +32,19 @@ export class DashboardService {
 
   async overview(babyId: number) {
     const now = new Date();
-    const [baby, lastFeeding, lastDiaper, lastSleep, latestTemperature, latestGrowth] = await Promise.all([
+    const [baby, lastFeeding, lastMilkFeeding, lastDiaper, lastSleep, latestTemperature, latestGrowth, allergyRecords] = await Promise.all([
       this.prisma.baby.findUnique({ where: { id: babyId }, select: { birthday: true } }),
       this.prisma.feeding.findFirst({
         where: { babyId, feedingTime: { lte: now } },
+        orderBy: { feedingTime: 'desc' },
+        select: { feedingTime: true, feedingType: true, amountMl: true },
+      }),
+      this.prisma.feeding.findFirst({
+        where: {
+          babyId,
+          feedingTime: { lte: now },
+          feedingType: { not: FeedingType.COMPLEMENTARY_FOOD },
+        },
         orderBy: { feedingTime: 'desc' },
         select: { feedingTime: true, feedingType: true, amountMl: true },
       }),
@@ -42,6 +52,11 @@ export class DashboardService {
       this.prisma.sleep.findFirst({ where: { babyId, startTime: { lte: now } }, orderBy: { startTime: 'desc' } }),
       this.prisma.temperature.findFirst({ where: { babyId, measureTime: { lte: now } }, orderBy: { measureTime: 'desc' } }),
       this.prisma.growthRecord.findFirst({ where: { babyId }, orderBy: { measureTime: 'desc' } }),
+      this.prisma.foodAllergyRecord.findMany({
+        where: { babyId },
+        orderBy: [{ exposureTime: 'desc' }, { id: 'desc' }],
+        include: { food: true },
+      }),
     ]);
 
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
@@ -55,7 +70,7 @@ export class DashboardService {
       // 睡眠间隔起点：已结束取 endTime，进行中（endTime 为 null）回退取 startTime
       sleep: this.card(lastSleep ? (lastSleep.endTime ?? lastSleep.startTime) : null),
       wakePrediction: this.wakePrediction(lastSleep, ageMonths, window),
-      feedingSuggestion: this.feedingSuggestion(lastFeeding, ageMonths, feedingGuide),
+      feedingSuggestion: this.feedingSuggestion(lastMilkFeeding, ageMonths, feedingGuide),
       latestTemperature: latestTemperature
         ? { temperature: Number(latestTemperature.temperature), measureTime: latestTemperature.measureTime.toISOString() }
         : null,
@@ -66,7 +81,41 @@ export class DashboardService {
             measureTime: latestGrowth.measureTime.toISOString(),
           }
         : null,
+      foodAllergySummary: this.foodAllergySummary(allergyRecords),
     };
+  }
+
+  private foodAllergySummary(
+    records: {
+      foodId: number;
+      exposureTime: Date;
+      finalConclusion: 'NOT_ALLERGIC' | 'POSSIBLE' | 'ALLERGIC';
+      observations: unknown;
+      food: { name: string };
+    }[],
+  ) {
+    const latest = new Map<number, (typeof records)[number]>();
+    for (const record of records) {
+      if (!latest.has(record.foodId)) latest.set(record.foodId, record);
+    }
+    const result = { allergic: [], possible: [], notAllergic: [] } as {
+      allergic: unknown[];
+      possible: unknown[];
+      notAllergic: unknown[];
+    };
+    for (const record of latest.values()) {
+      const item = {
+        foodId: record.foodId,
+        foodName: record.food.name,
+        conclusion: record.finalConclusion,
+        symptoms: positiveSymptomLabels(record.observations as FoodAllergyObservations),
+        exposureTime: record.exposureTime.toISOString(),
+      };
+      if (record.finalConclusion === 'ALLERGIC') result.allergic.push(item);
+      else if (record.finalConclusion === 'POSSIBLE') result.possible.push(item);
+      else result.notAllergic.push(item);
+    }
+    return result;
   }
 
   private feedingSuggestion(

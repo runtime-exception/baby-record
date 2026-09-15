@@ -14,7 +14,7 @@ import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
 import { useDashboardStore } from '@/stores/dashboard';
 
-type Category = 'supplement' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'height' | 'weight';
+type Category = 'supplement' | 'allergy' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'height' | 'weight';
 
 const router = useRouter();
 const message = useMessage();
@@ -25,6 +25,7 @@ const dashboardStore = useDashboardStore();
 const category = ref<Category>('supplement');
 const categoryOptions: { label: string; value: Category; icon: string }[] = [
   { label: '补剂', value: 'supplement', icon: '💊' },
+  { label: '辅食排敏', value: 'allergy', icon: '🔎' },
   { label: '玩耍', value: 'play', icon: '🎮' },
   { label: '抬头', value: 'headup', icon: '👶' },
   { label: '翻身', value: 'turn', icon: '🔄' },
@@ -75,7 +76,7 @@ const prefilled = ref(false);
 /** 滚轮是否被改动过（避免误存 50.0cm / 3.5kg 的初始占位） */
 const growthTouched = ref(false);
 
-const activityEventLabel: Record<Exclude<Category, 'supplement' | 'height' | 'weight'>, string> = {
+const activityEventLabel: Record<Exclude<Category, 'supplement' | 'allergy' | 'height' | 'weight'>, string> = {
   play: '玩耍',
   headup: '抬头',
   turn: '翻身',
@@ -84,6 +85,11 @@ const activityEventLabel: Record<Exclude<Category, 'supplement' | 'height' | 'we
 };
 
 const submitting = ref(false);
+
+function selectCategory(value: Category) {
+  if (value === 'allergy') router.push('/record/food-allergy');
+  else category.value = value;
+}
 
 // 进入页面时用最近一次测量回填默认值（与体温页一致）
 onMounted(async () => {
@@ -151,7 +157,7 @@ async function onSubmit() {
     } else {
       await activityApi.create({
         babyId: baby.id,
-        eventType: activityEventLabel[category.value as Exclude<Category, 'supplement' | 'height' | 'weight'>],
+        eventType: activityEventLabel[category.value as Exclude<Category, 'supplement' | 'allergy' | 'height' | 'weight'>],
         eventTime: new Date(activityTime.value).toISOString(),
         description: description.value || undefined,
         creatorId: user.id,
@@ -185,7 +191,7 @@ async function onSubmit() {
                 ? 'bg-ios-green text-white shadow-card'
                 : 'bg-ios-fill/50 text-ios-secondary'
             "
-            @click="category = c.value"
+            @click="selectCategory(c.value)"
           >
             <span class="text-xl">{{ c.icon }}</span>
             <span class="text-xs font-medium">{{ c.label }}</span>

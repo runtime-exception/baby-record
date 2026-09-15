@@ -27,9 +27,16 @@ enum UserRole {
 }
 
 enum FeedingType {
-  BREAST_MILK // 母乳
-  FORMULA     // 奶粉
-  MIXED       // 混合
+  BREAST_MILK       // 母乳
+  FORMULA           // 奶粉
+  COMPLEMENTARY_FOOD // 辅食
+  MIXED             // 混合
+}
+
+enum AllergyConclusion {
+  NOT_ALLERGIC
+  POSSIBLE
+  ALLERGIC
 }
 
 enum DiaperType {
@@ -69,6 +76,7 @@ model Baby {
   medicalRecords MedicalRecord[]
   aiAnalyses     AiAnalysis[]
   temperatures   Temperature[]
+  foodAllergyRecords FoodAllergyRecord[]
 
   @@map("baby")
 }
@@ -87,6 +95,7 @@ model User {
   growthRecords GrowthRecord[]
   medicalRecords MedicalRecord[]
   temperatures  Temperature[]
+  foodAllergyRecords FoodAllergyRecord[]
 
   @@map("user")
 }
@@ -122,10 +131,60 @@ model Feeding {
 
   baby    Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
   creator User @relation(fields: [creatorId], references: [id])
+  foods   FeedingFood[]
 
   @@index([babyId, feedingTime])
   @@index([creatorId])
   @@map("feeding")
+}
+
+model Food {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  isActive    Boolean  @default(true) @map("is_active")
+  createdTime DateTime @default(now()) @map("created_time")
+  updatedTime DateTime @updatedAt @map("updated_time")
+
+  feedings       FeedingFood[]
+  allergyRecords FoodAllergyRecord[]
+
+  @@map("food")
+}
+
+model FeedingFood {
+  feedingId Int @map("feeding_id")
+  foodId    Int @map("food_id")
+
+  feeding Feeding @relation(fields: [feedingId], references: [id], onDelete: Cascade)
+  food    Food    @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@id([feedingId, foodId])
+  @@index([foodId])
+  @@map("feeding_food")
+}
+
+model FoodAllergyRecord {
+  id               Int               @id @default(autoincrement())
+  babyId           Int               @map("baby_id")
+  foodId           Int               @map("food_id")
+  exposureTime     DateTime          @map("exposure_time")
+  observations     Json
+  systemScore      Int               @map("system_score")
+  systemConclusion AllergyConclusion @map("system_conclusion")
+  finalConclusion  AllergyConclusion @map("final_conclusion")
+  remark           String?
+  creatorId        Int               @map("creator_id")
+  createdTime      DateTime          @default(now()) @map("created_time")
+  updatedTime      DateTime          @updatedAt @map("updated_time")
+
+  baby    Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  food    Food @relation(fields: [foodId], references: [id], onDelete: Restrict)
+  creator User @relation(fields: [creatorId], references: [id])
+
+  @@index([babyId, exposureTime])
+  @@index([babyId, foodId, exposureTime])
+  @@index([creatorId])
+  @@map("food_allergy_record")
 }
 
 model Diaper {

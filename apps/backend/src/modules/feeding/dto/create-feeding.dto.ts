@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { FeedingType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { ArrayUnique, IsArray, IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateFeedingDto {
   @ApiProperty({ description: '宝宝ID' })
@@ -30,6 +30,13 @@ export class CreateFeedingDto {
   @IsInt()
   @Min(0)
   durationMinutes?: number;
+
+  @ApiPropertyOptional({ type: [Number], description: '辅食ID列表；辅食类型必填，混合类型选填' })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  foodIds?: number[];
 
   @ApiPropertyOptional({ description: '备注' })
   @IsOptional()

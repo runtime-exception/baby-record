@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Feeding, Prisma } from '@prisma/client';
+import { Feeding, FeedingType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/enums/error-code.enum';
@@ -19,7 +19,18 @@ export interface FeedingVo {
   remark: string | null;
   creatorId: number;
   createdTime: string;
+  updatedTime: string;
+  foods: {
+    id: number;
+    name: string;
+    isActive: boolean;
+    createdTime: string;
+    updatedTime: string;
+  }[];
 }
+
+const includeFoods = { foods: { include: { food: true } } } as const;
+type FeedingWithFoods = Prisma.FeedingGetPayload<{ include: typeof includeFoods }>;
 
 @Injectable()
 export class FeedingService {
@@ -27,31 +38,48 @@ export class FeedingService {
 
   async create(dto: CreateFeedingDto): Promise<FeedingVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
+    const foodIds = await this.validateFoods(dto.feedingType, dto.foodIds ?? []);
     const feeding = await this.prisma.feeding.create({
       data: {
         babyId: dto.babyId,
         feedingType: dto.feedingType,
         feedingTime: new Date(dto.feedingTime),
-        amountMl: dto.amountMl,
+        amountMl: dto.feedingType === FeedingType.COMPLEMENTARY_FOOD ? null : dto.amountMl,
         durationMinutes: dto.durationMinutes,
         remark: dto.remark,
         creatorId: dto.creatorId,
+        foods: { create: foodIds.map((foodId) => ({ foodId })) },
       },
+      include: includeFoods,
     });
     return this.toVo(feeding);
   }
 
   async update(id: number, dto: UpdateFeedingDto): Promise<FeedingVo> {
-    await this.findOne(id);
+    const existing = await this.findRecord(id);
+    const feedingType = dto.feedingType ?? existing.feedingType;
+    const requestedFoodIds = dto.foodIds ?? existing.foods.map((item) => item.foodId);
+    const foodIds = await this.validateFoods(
+      feedingType,
+      requestedFoodIds,
+      existing.foods.map((item) => item.foodId),
+    );
     const feeding = await this.prisma.feeding.update({
       where: { id },
       data: {
         ...(dto.feedingType !== undefined && { feedingType: dto.feedingType }),
         ...(dto.feedingTime !== undefined && { feedingTime: new Date(dto.feedingTime) }),
-        ...(dto.amountMl !== undefined && { amountMl: dto.amountMl }),
+        ...(feedingType === FeedingType.COMPLEMENTARY_FOOD
+          ? { amountMl: null }
+          : dto.amountMl !== undefined && { amountMl: dto.amountMl }),
         ...(dto.durationMinutes !== undefined && { durationMinutes: dto.durationMinutes }),
         ...(dto.remark !== undefined && { remark: dto.remark }),
+        foods: {
+          deleteMany: {},
+          create: foodIds.map((foodId) => ({ foodId })),
+        },
       },
+      include: includeFoods,
     });
     return this.toVo(feeding);
   }
@@ -64,6 +92,7 @@ export class FeedingService {
         orderBy: { feedingTime: 'desc' },
         skip: query.skip,
         take: query.take,
+        include: includeFoods,
       }),
       this.prisma.feeding.count({ where }),
     ]);
@@ -71,9 +100,7 @@ export class FeedingService {
   }
 
   async findOne(id: number): Promise<FeedingVo> {
-    const feeding = await this.prisma.feeding.findUnique({ where: { id } });
-    if (!feeding) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
-    return this.toVo(feeding);
+    return this.toVo(await this.findRecord(id));
   }
 
   async remove(id: number): Promise<void> {
@@ -113,7 +140,39 @@ export class FeedingService {
     if (!user) throw new BusinessException(ErrorCode.USER_NOT_FOUND);
   }
 
-  private toVo(f: Feeding): FeedingVo {
+  private async findRecord(id: number): Promise<FeedingWithFoods> {
+    const feeding = await this.prisma.feeding.findUnique({ where: { id }, include: includeFoods });
+    if (!feeding) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
+    return feeding;
+  }
+
+  private async validateFoods(
+    feedingType: FeedingType,
+    requestedFoodIds: number[],
+    existingFoodIds: number[] = [],
+  ): Promise<number[]> {
+    const acceptsFoods =
+      feedingType === FeedingType.COMPLEMENTARY_FOOD || feedingType === FeedingType.MIXED;
+    if (!acceptsFoods && requestedFoodIds.length) {
+      throw new BusinessException(ErrorCode.PARAM_INVALID, '该喂养类型不能添加辅食');
+    }
+    if (feedingType === FeedingType.COMPLEMENTARY_FOOD && !requestedFoodIds.length) {
+      throw new BusinessException(ErrorCode.PARAM_MISSING, '请选择至少一种辅食');
+    }
+    if (!requestedFoodIds.length) return [];
+    const count = await this.prisma.food.count({
+      where: {
+        id: { in: requestedFoodIds },
+        OR: [{ isActive: true }, { id: { in: existingFoodIds } }],
+      },
+    });
+    if (count !== requestedFoodIds.length) {
+      throw new BusinessException(ErrorCode.PARAM_INVALID, '辅食不存在或已停用');
+    }
+    return requestedFoodIds;
+  }
+
+  private toVo(f: FeedingWithFoods): FeedingVo {
     return {
       id: f.id,
       babyId: f.babyId,
@@ -124,6 +183,12 @@ export class FeedingService {
       remark: f.remark,
       creatorId: f.creatorId,
       createdTime: f.createdTime.toISOString(),
+      updatedTime: f.updatedTime.toISOString(),
+      foods: f.foods.map(({ food }) => ({
+        ...food,
+        createdTime: food.createdTime.toISOString(),
+        updatedTime: food.updatedTime.toISOString(),
+      })),
     };
   }
 }

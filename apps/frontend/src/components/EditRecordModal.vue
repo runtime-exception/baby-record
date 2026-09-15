@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useMessage } from 'naive-ui';
-import { NInput, NInputNumber } from 'naive-ui';
+import { NInput, NInputNumber, NSelect, NSwitch } from 'naive-ui';
 import IconPicker from '@/components/form/IconPicker.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
@@ -11,6 +11,7 @@ import { sleepApi } from '@/api/sleep';
 import { supplementApi } from '@/api/supplement';
 import { activityApi } from '@/api/activity';
 import { temperatureApi } from '@/api/temperature';
+import { foodApi } from '@/api/food';
 import {
   FEEDING_TYPE_LABELS,
   DIAPER_TYPE_LABELS,
@@ -42,12 +43,15 @@ const eventType = ref('');
 const description = ref('');
 const temperature = ref(36.5);
 const submitting = ref(false);
+const foods = ref<{ id: number; name: string }[]>([]);
+const feedingFoodIds = ref<number[]>([]);
+const addFoodToMixed = ref(false);
 const seniorStep = ref<'summary' | 'time' | 'details' | 'confirm'>('summary');
 
 const feedingTypeOptions = ALL_FEEDING_TYPES.map((v) => ({
   label: FEEDING_TYPE_LABELS[v],
   value: v,
-  icon: v === 'BREAST_MILK' ? '🤱' : v === 'FORMULA' ? '🍼' : '🤱🍼',
+  icon: v === 'BREAST_MILK' ? '🤱' : v === 'FORMULA' ? '🍼' : v === 'COMPLEMENTARY_FOOD' ? '🥣' : '🤱🍼',
 }));
 const diaperTypeOptions = ALL_DIAPER_TYPES.map((v) => ({
   label: DIAPER_TYPE_LABELS[v],
@@ -62,8 +66,13 @@ const titleMap: Record<TimelineEntry['type'], string> = {
   supplement: '补剂',
   activity: '事件',
   temperature: '体温',
+  foodAllergy: '辅食排敏',
 };
 const entryTitle = computed(() => (props.entry ? titleMap[props.entry.type] : ''));
+const feedingIsComplementary = computed(() => feedingType.value === 'COMPLEMENTARY_FOOD');
+const feedingIsMixed = computed(() => feedingType.value === 'MIXED');
+const feedingShowsFoods = computed(() => feedingIsComplementary.value || (feedingIsMixed.value && addFoodToMixed.value));
+const foodOptions = computed(() => foods.value.map((food) => ({ label: food.name, value: food.id })));
 const seniorTimeText = computed(() => {
   if (!props.entry) return '';
   if (props.entry.type === 'sleep') {
@@ -74,7 +83,10 @@ const seniorTimeText = computed(() => {
 });
 const seniorDetailText = computed(() => {
   if (!props.entry) return '';
-  if (props.entry.type === 'feeding') return `${FEEDING_TYPE_LABELS[feedingType.value]} · ${amountMl.value} ml`;
+  if (props.entry.type === 'feeding') {
+    const selected = foods.value.filter((food) => feedingFoodIds.value.includes(food.id)).map((food) => food.name);
+    return [FEEDING_TYPE_LABELS[feedingType.value], !feedingIsComplementary.value ? `${amountMl.value} ml` : '', selected.join('、')].filter(Boolean).join(' · ');
+  }
   if (props.entry.type === 'diaper') return DIAPER_TYPE_LABELS[diaperType.value];
   if (props.entry.type === 'temperature') return `${temperature.value.toFixed(1)}℃`;
   if (props.entry.type === 'supplement') return `${supplementName.value || '未填写名称'}${amount.value ? ` · ${amount.value}${unit.value}` : ''}`;
@@ -88,15 +100,21 @@ function iso(ts: number) {
 
 watch(
   () => props.entry,
-  (e) => {
+  async (e) => {
     if (!e) return;
     seniorStep.value = 'summary';
     remark.value = '';
     const r = e.raw as unknown as Record<string, unknown>;
     if (e.type === 'feeding') {
+      foods.value = await foodApi.list();
+      for (const linked of ((r.foods as { id: number; name: string }[] | undefined) ?? [])) {
+        if (!foods.value.some((food) => food.id === linked.id)) foods.value.push(linked);
+      }
       time.value = new Date(r.feedingTime as string).getTime();
       feedingType.value = r.feedingType as FeedingType;
       amountMl.value = (r.amountMl as number | null) ?? 120;
+      feedingFoodIds.value = ((r.foods as { id: number }[] | undefined) ?? []).map((food) => food.id);
+      addFoodToMixed.value = feedingType.value === 'MIXED' && feedingFoodIds.value.length > 0;
       remark.value = (r.remark as string) || '';
     } else if (e.type === 'diaper') {
       time.value = new Date(r.changeTime as string).getTime();
@@ -151,7 +169,8 @@ async function onSave() {
       await feedingApi.update(r.id, {
         feedingTime: iso(time.value),
         feedingType: feedingType.value,
-        amountMl: amountMl.value,
+        ...(!feedingIsComplementary.value && { amountMl: amountMl.value }),
+        foodIds: feedingShowsFoods.value ? feedingFoodIds.value : [],
         remark: remark.value || undefined,
       });
     } else if (e.type === 'diaper') {
@@ -235,7 +254,12 @@ async function onSave() {
         <template v-else-if="seniorStep === 'details'">
           <div class="flex items-center justify-between mb-5"><button class="text-ios-blue text-lg font-semibold" @click="seniorStep = 'summary'">返回</button><h3 class="text-xl font-bold text-ios-label">修改内容</h3><span class="w-10" /></div>
           <div class="space-y-4">
-            <div v-if="entry.type === 'feeding'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">喂养类型</p><IconPicker v-model="feedingType" :options="feedingTypeOptions" active-color="bg-ios-orange" /><p class="text-base font-semibold text-ios-label mt-6 mb-3">奶量</p><WheelPicker v-model="amountMl" :options="Array.from({ length: 31 }, (_, i) => ({ label: `${i * 10} ml`, value: i * 10 }))" /></div>
+            <div v-if="entry.type === 'feeding'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-4">
+              <div><p class="text-base font-semibold text-ios-label mb-3">喂养类型</p><IconPicker v-model="feedingType" :options="feedingTypeOptions" active-color="bg-ios-orange" /></div>
+              <div v-if="!feedingIsComplementary"><p class="text-base font-semibold text-ios-label mb-3">奶量</p><WheelPicker v-model="amountMl" :options="Array.from({ length: 31 }, (_, i) => ({ label: `${i * 10} ml`, value: i * 10 }))" /></div>
+              <div v-if="feedingIsMixed" class="flex items-center gap-3"><span class="flex-1 text-base font-semibold text-ios-label">添加辅食</span><NSwitch v-model:value="addFoodToMixed" /></div>
+              <div v-if="feedingShowsFoods"><p class="text-base font-semibold text-ios-label mb-2">辅食</p><NSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" /></div>
+            </div>
             <div v-else-if="entry.type === 'diaper'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">纸尿裤类型</p><IconPicker v-model="diaperType" :options="diaperTypeOptions" active-color="bg-ios-blue" /></div>
             <div v-else-if="entry.type === 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">体温</p><WheelPicker v-model="temperature" :options="Array.from({ length: 51 }, (_, i) => ({ label: `${(36 + i / 10).toFixed(1)}℃`, value: 36 + i / 10 }))" /></div>
             <div v-else-if="entry.type === 'supplement'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-4"><div><p class="text-base font-semibold text-ios-label mb-2">名称</p><NInput v-model:value="supplementName" size="large" /></div><div><p class="text-base font-semibold text-ios-label mb-2">剂量</p><NInput v-model:value="amount" size="large" /></div></div>
@@ -285,10 +309,18 @@ async function onSave() {
               <label class="text-sm font-medium text-ios-secondary">类型</label>
               <IconPicker v-model="feedingType" :options="feedingTypeOptions" active-color="bg-ios-orange" class="mt-3" />
             </div>
-            <div class="bg-ios-card rounded-3xl p-4 shadow-card grid grid-cols-4 gap-2 items-center">
+            <div v-if="!feedingIsComplementary" class="bg-ios-card rounded-3xl p-4 shadow-card grid grid-cols-4 gap-2 items-center">
               <label class="text-sm font-medium text-ios-secondary col-span-1">奶量</label>
               <WheelPicker v-model="amountMl" :options="Array.from({ length: 31 }, (_, i) => ({ label: `${i * 10} ml`, value: i * 10 }))" class="col-span-2" />
               <span class="text-sm text-ios-secondary text-center">ml</span>
+            </div>
+            <div v-if="feedingIsMixed" class="bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3">
+              <span class="flex-1 text-sm font-medium text-ios-label">添加辅食</span>
+              <NSwitch v-model:value="addFoodToMixed" />
+            </div>
+            <div v-if="feedingShowsFoods" class="bg-ios-card rounded-3xl p-4 shadow-card">
+              <label class="text-sm font-medium text-ios-secondary">辅食</label>
+              <NSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" class="mt-2" />
             </div>
           </template>
 

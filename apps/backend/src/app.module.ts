@@ -18,6 +18,8 @@ import { IntervalModule } from './modules/interval/interval.module';
 import { ChartModule } from './modules/chart/chart.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GrowthModule } from './modules/growth/growth.module';
+import { FoodModule } from './modules/food/food.module';
+import { FoodAllergyModule } from './modules/food-allergy/food-allergy.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { GrowthModule } from './modules/growth/growth.module';
     ActivityModule,
     TemperatureModule,
     GrowthModule,
+    FoodModule,
+    FoodAllergyModule,
     // 聚合层
     RecordModule,
     StatisticsModule,

@@ -17,6 +17,7 @@ const recordStore = useRecordStore();
 const nowMs = ref(Date.now());
 const showSleepAdvice = ref(false);
 const showFeedingAdvice = ref(false);
+const showAllergyDetail = ref(false);
 let clockTimer: number | undefined;
 
 const baby = computed(() => babyStore.currentBaby);
@@ -61,6 +62,17 @@ const quickActions = [
 ];
 
 const latestTemperature = computed(() => dashStore.data?.latestTemperature || null);
+const allergySummary = computed(() => dashStore.data?.foodAllergySummary ?? {
+  allergic: [],
+  possible: [],
+  notAllergic: [],
+});
+const allergyHeadline = computed(() => {
+  const { allergic, possible } = allergySummary.value;
+  if (allergic.length) return `已发现 ${allergic.length} 种过敏辅食`;
+  if (possible.length) return `暂未发现明确过敏辅食 · ${possible.length} 种待观察`;
+  return '暂未发现过敏辅食';
+});
 /** 首页月龄旁展示的最新身高/体重（来自最近一次成长测量） */
 const latestGrowth = computed(() => dashStore.data?.latestGrowth || null);
 const growthSummary = computed(() => {
@@ -312,6 +324,23 @@ const feedingAdvice = computed(() => {
       </div>
     </section>
 
+    <!-- 辅食排敏摘要 -->
+    <section class="px-5 mt-7">
+      <button
+        class="w-full bg-ios-card rounded-3xl p-5 shadow-card text-left active:scale-[0.98] transition-transform"
+        @click="showAllergyDetail = true"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🥣</span>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-ios-label">宝宝辅食排敏</p>
+            <p class="mt-1 text-sm" :class="allergySummary.allergic.length ? 'text-ios-pink font-semibold' : 'text-ios-secondary'">{{ allergyHeadline }}</p>
+          </div>
+          <span class="text-xl text-ios-secondary">›</span>
+        </div>
+      </button>
+    </section>
+
     <!-- 快捷操作 -->
     <section class="px-5 mt-7">
       <h2 class="text-sm font-semibold text-ios-secondary mb-3 px-1">快捷操作</h2>
@@ -342,6 +371,48 @@ const feedingAdvice = computed(() => {
       </button>
     </section>
   </div>
+
+  <NModal
+    v-model:show="showAllergyDetail"
+    preset="card"
+    title="宝宝辅食排敏情况"
+    :bordered="false"
+    :style="{ width: 'calc(100vw - 40px)', maxWidth: '420px' }"
+  >
+    <div class="space-y-5 text-ios-label">
+      <section>
+        <h3 class="text-sm font-bold text-ios-pink">过敏辅食</h3>
+        <div v-if="allergySummary.allergic.length" class="mt-2 space-y-2">
+          <div v-for="item in allergySummary.allergic" :key="item.foodId" class="rounded-2xl bg-ios-pink/10 p-3">
+            <p class="font-semibold">{{ item.foodName }}</p>
+            <p class="mt-1 text-sm font-semibold text-ios-pink">{{ item.symptoms.length ? item.symptoms.join('、') : '用户最终判断为过敏' }}</p>
+          </div>
+        </div>
+        <p v-else class="mt-2 text-sm text-ios-secondary">暂未发现</p>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-bold text-ios-orange">可能过敏 / 待观察</h3>
+        <div v-if="allergySummary.possible.length" class="mt-2 space-y-2">
+          <div v-for="item in allergySummary.possible" :key="item.foodId" class="rounded-2xl bg-ios-orange/10 p-3">
+            <p class="font-semibold">{{ item.foodName }}</p>
+            <p v-if="item.symptoms.length" class="mt-1 text-xs text-ios-orange">{{ item.symptoms.join('、') }}</p>
+          </div>
+        </div>
+        <p v-else class="mt-2 text-sm text-ios-secondary">暂无待观察辅食</p>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-bold text-ios-green">不过敏辅食</h3>
+        <div v-if="allergySummary.notAllergic.length" class="mt-2 flex flex-wrap gap-2">
+          <span v-for="item in allergySummary.notAllergic" :key="item.foodId" class="rounded-xl bg-ios-green/10 px-3 py-1.5 text-sm text-ios-green">{{ item.foodName }}</span>
+        </div>
+        <p v-else class="mt-2 text-sm text-ios-secondary">暂无已确认记录</p>
+      </section>
+
+      <button class="w-full rounded-2xl bg-ios-orange py-3 font-semibold text-white" @click="showAllergyDetail = false; router.push('/record/food-allergy')">新增排敏记录</button>
+    </div>
+  </NModal>
 
   <NModal
     v-model:show="showSleepAdvice"

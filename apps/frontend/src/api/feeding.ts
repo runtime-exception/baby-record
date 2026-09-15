@@ -16,6 +16,7 @@ export interface CreateFeedingPayload {
   feedingTime: string;
   amountMl?: number;
   durationMinutes?: number;
+  foodIds?: number[];
   remark?: string;
   creatorId: number;
 }

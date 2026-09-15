@@ -6,9 +6,23 @@
 // ============ 枚举 ============
 export type Gender = 'MALE' | 'FEMALE';
 export type UserRole = 'DAD' | 'MOM' | 'GRANDPA_P' | 'GRANDMA_P' | 'GRANDMA_M' | 'GRANDPA_M';
-export type FeedingType = 'BREAST_MILK' | 'FORMULA' | 'MIXED';
+export type FeedingType = 'BREAST_MILK' | 'FORMULA' | 'COMPLEMENTARY_FOOD' | 'MIXED';
 export type DiaperType = 'PEE' | 'POOP' | 'BOTH';
 export type SleepType = 'DAYTIME' | 'NIGHT';
+export type AllergyConclusion = 'NOT_ALLERGIC' | 'POSSIBLE' | 'ALLERGIC';
+export type ObservationState = 'YES' | 'NO' | 'UNOBSERVED';
+export type FoodAllergySymptom =
+  | 'hives'
+  | 'facialSwelling'
+  | 'immediateVomiting'
+  | 'persistentCough'
+  | 'breathingAbnormal'
+  | 'repetitiveVomiting'
+  | 'pallor'
+  | 'lethargy'
+  | 'eczemaWorsened'
+  | 'delayedVomiting'
+  | 'diarrhea';
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   DAD: '爸爸',
@@ -22,8 +36,69 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 export const FEEDING_TYPE_LABELS: Record<FeedingType, string> = {
   BREAST_MILK: '母乳',
   FORMULA: '奶粉',
+  COMPLEMENTARY_FOOD: '辅食',
   MIXED: '混合',
 };
+
+export const ALLERGY_CONCLUSION_LABELS: Record<AllergyConclusion, string> = {
+  NOT_ALLERGIC: '不过敏',
+  POSSIBLE: '可能过敏',
+  ALLERGIC: '过敏',
+};
+
+export const OBSERVATION_STATE_LABELS: Record<ObservationState, string> = {
+  YES: '是',
+  NO: '否',
+  UNOBSERVED: '未观察',
+};
+
+export const ALLERGY_SYMPTOMS: {
+  key: FoodAllergySymptom;
+  label: string;
+  window: '几分钟～2 小时' | '约 1～4 小时' | '数小时～3 天';
+  score: number;
+}[] = [
+  { key: 'hives', label: '荨麻疹', window: '几分钟～2 小时', score: 4 },
+  { key: 'facialSwelling', label: '嘴唇、眼睑或面部肿胀', window: '几分钟～2 小时', score: 8 },
+  { key: 'immediateVomiting', label: '呕吐', window: '几分钟～2 小时', score: 4 },
+  { key: 'persistentCough', label: '突然持续咳嗽', window: '几分钟～2 小时', score: 8 },
+  { key: 'breathingAbnormal', label: '喘鸣或呼吸异常', window: '几分钟～2 小时', score: 10 },
+  { key: 'repetitiveVomiting', label: '反复、大量呕吐', window: '约 1～4 小时', score: 6 },
+  { key: 'pallor', label: '脸色苍白', window: '约 1～4 小时', score: 3 },
+  { key: 'lethargy', label: '异常嗜睡或精神明显变差', window: '约 1～4 小时', score: 3 },
+  { key: 'eczemaWorsened', label: '湿疹明显加重', window: '数小时～3 天', score: 1 },
+  { key: 'delayedVomiting', label: '反复呕吐', window: '数小时～3 天', score: 2 },
+  { key: 'diarrhea', label: '腹泻', window: '数小时～3 天', score: 1 },
+];
+
+export type FoodAllergyObservations = Record<FoodAllergySymptom, ObservationState>;
+
+export interface AllergyScoreResult {
+  score: number;
+  conclusion: AllergyConclusion;
+  urgent: boolean;
+}
+
+/** 产品风险提示规则，不是临床诊断量表。 */
+export function scoreAllergyObservations(observations: FoodAllergyObservations): AllergyScoreResult {
+  const score = ALLERGY_SYMPTOMS.reduce(
+    (total, symptom) => total + (observations[symptom.key] === 'YES' ? symptom.score : 0),
+    0,
+  );
+  const hasYes = ALLERGY_SYMPTOMS.some((symptom) => observations[symptom.key] === 'YES');
+  const hasUnobserved = ALLERGY_SYMPTOMS.some((symptom) => observations[symptom.key] === 'UNOBSERVED');
+  const fpiesRedFlag =
+    observations.repetitiveVomiting === 'YES' &&
+    (observations.pallor === 'YES' || observations.lethargy === 'YES');
+  const urgent =
+    observations.facialSwelling === 'YES' ||
+    observations.persistentCough === 'YES' ||
+    observations.breathingAbnormal === 'YES' ||
+    fpiesRedFlag;
+  const conclusion: AllergyConclusion =
+    score >= 8 ? 'ALLERGIC' : hasYes || hasUnobserved ? 'POSSIBLE' : 'NOT_ALLERGIC';
+  return { score, conclusion, urgent };
+}
 
 export const DIAPER_TYPE_LABELS: Record<DiaperType, string> = {
   PEE: '尿',
@@ -42,7 +117,7 @@ export const GENDER_LABELS: Record<Gender, string> = {
 };
 
 export const ALL_USER_ROLES: UserRole[] = ['DAD', 'MOM', 'GRANDPA_P', 'GRANDMA_P', 'GRANDMA_M', 'GRANDPA_M'];
-export const ALL_FEEDING_TYPES: FeedingType[] = ['BREAST_MILK', 'FORMULA', 'MIXED'];
+export const ALL_FEEDING_TYPES: FeedingType[] = ['BREAST_MILK', 'FORMULA', 'COMPLEMENTARY_FOOD', 'MIXED'];
 export const ALL_DIAPER_TYPES: DiaperType[] = ['PEE', 'POOP', 'BOTH'];
 
 // ============ 年龄 ============
@@ -95,6 +170,34 @@ export interface FeedingVo {
   feedingType: FeedingType;
   amountMl: number | null;
   durationMinutes: number | null;
+  remark: string | null;
+  creatorId: number;
+  creator?: RecordCreator;
+  createdTime: string;
+  updatedTime?: string;
+  foods: FoodVo[];
+}
+
+export interface FoodVo {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdTime: string;
+  updatedTime: string;
+}
+
+export interface FoodAllergyRecordVo {
+  id: number;
+  babyId: number;
+  foodId: number;
+  food: FoodVo;
+  exposureTime: string;
+  observations: FoodAllergyObservations;
+  systemScore: number;
+  systemConclusion: AllergyConclusion;
+  finalConclusion: AllergyConclusion;
+  urgent: boolean;
+  positiveSymptoms: string[];
   remark: string | null;
   creatorId: number;
   creator?: RecordCreator;
@@ -189,6 +292,21 @@ export interface DashboardData {
   latestTemperature: Pick<TemperatureVo, 'temperature' | 'measureTime'> | null;
   /** 最新一次身高/体重测量（首页月龄旁展示） */
   latestGrowth: LatestGrowth | null;
+  foodAllergySummary: FoodAllergySummary;
+}
+
+export interface FoodAllergySummaryItem {
+  foodId: number;
+  foodName: string;
+  conclusion: AllergyConclusion;
+  symptoms: string[];
+  exposureTime: string;
+}
+
+export interface FoodAllergySummary {
+  allergic: FoodAllergySummaryItem[];
+  possible: FoodAllergySummaryItem[];
+  notAllergic: FoodAllergySummaryItem[];
 }
 
 export interface WakePrediction {
@@ -377,6 +495,7 @@ export interface DailyRecords {
   supplement: SupplementVo[];
   activity: ActivityVo[];
   temperature: TemperatureVo[];
+  foodAllergy: FoodAllergyRecordVo[];
 }
 
 // ============ 记录人本地缓存 ============

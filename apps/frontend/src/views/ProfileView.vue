@@ -143,6 +143,22 @@ async function logout() {
 
     <!-- 外观 -->
     <section class="px-5 mt-4">
+      <h2 class="text-sm font-semibold text-ios-secondary mb-2 px-1">辅食</h2>
+      <button
+        class="w-full bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3 active:scale-[0.98] transition-transform"
+        @click="router.push('/profile/foods')"
+      >
+        <span class="text-2xl">🥣</span>
+        <div class="flex-1 text-left">
+          <p class="text-sm font-semibold text-ios-label">辅食管理</p>
+          <p class="text-xs text-ios-secondary mt-0.5">维护喂养与排敏时可选的辅食</p>
+        </div>
+        <span class="text-ios-secondary text-xl">›</span>
+      </button>
+    </section>
+
+    <!-- 外观 -->
+    <section class="px-5 mt-4">
       <h2 class="text-sm font-semibold text-ios-secondary mb-2 px-1">外观</h2>
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <TypeSegment v-model="themeMode" :options="themeOptions" />

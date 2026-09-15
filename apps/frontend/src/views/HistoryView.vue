@@ -10,6 +10,8 @@ import { sleepApi } from '@/api/sleep';
 import { supplementApi } from '@/api/supplement';
 import { activityApi } from '@/api/activity';
 import { temperatureApi } from '@/api/temperature';
+import { foodAllergyApi } from '@/api/food-allergy';
+import { useRouter } from 'vue-router';
 import { useBabyStore } from '@/stores/baby';
 import { useThemeStore } from '@/stores/theme';
 import { fmtTime, fmtDate, minutesToText } from '@/utils/format';
@@ -19,6 +21,7 @@ import {
   DIAPER_TYPE_LABELS,
   SLEEP_TYPE_LABELS,
   USER_ROLE_LABELS,
+  ALLERGY_CONCLUSION_LABELS,
   type DailyRecords,
 } from '@baby-record/shared';
 import type { TimelineEntry } from '@/types/timeline';
@@ -32,6 +35,7 @@ withDefaults(defineProps<{
 });
 
 const babyStore = useBabyStore();
+const router = useRouter();
 const themeStore = useThemeStore();
 const dialog = useDialog();
 const message = useMessage();
@@ -59,6 +63,7 @@ function buildItems(d: DailyRecords): TimelineEntry[] {
       detail:
         FEEDING_TYPE_LABELS[f.feedingType] +
         (f.amountMl ? ` · ${f.amountMl}ml` : '') +
+        (f.foods.length ? ` · ${f.foods.map((food) => food.name).join('、')}` : '') +
         (f.remark ? ` · ${f.remark}` : ''),
       colorClass: 'bg-ios-orange',
     }),
@@ -116,6 +121,17 @@ function buildItems(d: DailyRecords): TimelineEntry[] {
       detail: `${t.temperature.toFixed(1)}℃${t.remark ? ` · ${t.remark}` : ''}`, colorClass: 'bg-ios-pink',
     }),
   );
+  d.foodAllergy.forEach((record) =>
+    arr.push({
+      type: 'foodAllergy',
+      raw: record,
+      time: record.exposureTime,
+      icon: '🔎',
+      title: '辅食排敏',
+      detail: `${record.food.name} · ${ALLERGY_CONCLUSION_LABELS[record.finalConclusion]}${record.positiveSymptoms.length ? ` · ${record.positiveSymptoms.join('、')}` : ''}`,
+      colorClass: record.finalConclusion === 'ALLERGIC' ? 'bg-ios-pink' : record.finalConclusion === 'POSSIBLE' ? 'bg-ios-orange' : 'bg-ios-green',
+    }),
+  );
   return arr.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 }
 
@@ -147,6 +163,7 @@ async function removeEntry(e: TimelineEntry) {
         else if (e.type === 'supplement') await supplementApi.remove(r.id);
         else if (e.type === 'activity') await activityApi.remove(r.id);
         else if (e.type === 'temperature') await temperatureApi.remove(r.id);
+        else if (e.type === 'foodAllergy') await foodAllergyApi.remove(r.id);
         message.success('已删除');
         load();
       } catch {
@@ -161,6 +178,11 @@ function removeEditingEntry() {
   const entry = editingEntry.value;
   editingEntry.value = null;
   removeEntry(entry);
+}
+
+function editEntry(entry: TimelineEntry) {
+  if (entry.type === 'foodAllergy') router.push(`/record/food-allergy/${entry.raw.id}`);
+  else editingEntry.value = entry;
 }
 
 const filteredItems = computed(() => selectedType.value === 'all' ? items.value : items.value.filter((item) => item.type === selectedType.value));
@@ -182,6 +204,7 @@ function creatorRole(item: TimelineEntry): string {
 const typeOptions: { label: string; value: 'all' | TimelineEntry['type'] }[] = [
   { label: '全部', value: 'all' }, { label: '喂养', value: 'feeding' }, { label: '纸尿裤', value: 'diaper' },
   { label: '睡眠', value: 'sleep' }, { label: '补剂', value: 'supplement' }, { label: '活动', value: 'activity' }, { label: '体温', value: 'temperature' },
+  { label: '排敏', value: 'foodAllergy' },
 ];
 onMounted(load);
 watch(dateRange, load, { deep: true });
@@ -228,7 +251,7 @@ watch(dateRange, load, { deep: true });
             <div class="flex items-center gap-2">
               <span class="text-lg">{{ it.icon }}</span>
               <span class="text-sm font-semibold text-ios-label flex-1">{{ it.title }}</span>
-              <button class="text-xs text-ios-secondary px-1.5 active:opacity-60" @click.stop="editingEntry = it">
+              <button class="text-xs text-ios-secondary px-1.5 active:opacity-60" @click.stop="editEntry(it)">
                 编辑
               </button>
               <button class="text-xs text-ios-pink px-1.5 active:opacity-60" @click.stop="removeEntry(it)">
@@ -256,7 +279,7 @@ watch(dateRange, load, { deep: true });
             <div class="flex justify-between gap-4"><span class="text-ios-secondary">创建时间</span><span class="text-ios-label">{{ new Date(detailEntry.raw.createdTime).toLocaleString('zh-CN', { hour12: false }) }}</span></div>
             <div class="flex justify-between gap-4"><span class="text-ios-secondary">更新时间</span><span class="text-ios-label">{{ detailEntry.raw.updatedTime ? new Date(detailEntry.raw.updatedTime).toLocaleString('zh-CN', { hour12: false }) : '未修改' }}</span></div>
           </div>
-          <button class="w-full mt-4 rounded-2xl bg-ios-blue text-white font-semibold" :class="themeStore.seniorMode ? 'min-h-16 text-xl' : 'py-3.5'" @click="editingEntry = detailEntry; detailEntry = null">修改记录</button>
+          <button class="w-full mt-4 rounded-2xl bg-ios-blue text-white font-semibold" :class="themeStore.seniorMode ? 'min-h-16 text-xl' : 'py-3.5'" @click="editEntry(detailEntry); detailEntry = null">修改记录</button>
         </section>
       </div>
     </Teleport>
