@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { NIcon } from 'naive-ui';
 import { HomeOutline, CreateOutline, StatsChartOutline, PersonOutline } from '@vicons/ionicons5';
 
 const route = useRoute();
@@ -29,7 +28,7 @@ const activeTab = computed(() => (route.meta.tab as string) || 'home');
         :class="activeTab === t.name ? 'text-ios-blue' : 'text-ios-secondary'"
         @click="router.push(t.to)"
       >
-        <NIcon :component="t.icon" :size="24" />
+        <component :is="t.icon" class="h-6 w-6 shrink-0" aria-hidden="true" />
         <span class="text-[10px] font-medium">{{ t.label }}</span>
       </button>
     </div>

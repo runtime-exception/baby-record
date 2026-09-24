@@ -1,6 +1,45 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "konsta/vue/theme.css";
+
+@source "../../index.html";
+@source "./";
+
+@theme {
+  --color-ios-bg: var(--ios-bg);
+  --color-ios-card: var(--ios-card);
+  --color-ios-label: var(--ios-label);
+  --color-ios-secondary: var(--ios-secondary);
+  --color-ios-separator: var(--ios-separator);
+  --color-ios-fill: var(--ios-fill);
+  --color-ios-blue: #0a84ff;
+  --color-ios-green: #30d158;
+  --color-ios-red: #ff453a;
+  --color-ios-orange: #ff9f0a;
+  --color-ios-pink: #ff375f;
+  --color-ios-purple: #bf5af2;
+  --color-ios-teal: #64d2ff;
+  --color-ios-yellow: #ffd60a;
+  --color-shell: var(--app-shell-bg);
+
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
+
+  --font-sans:
+    'Baby Latin Rounded', 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+
+  --shadow-card: 0 2px 12px rgb(0 0 0 / 4%), 0 1px 2px rgb(0 0 0 / 3%);
+  --shadow-soft: 0 4px 20px rgb(0 0 0 / 6%);
+  --shadow-tab: 0 -1px 12px rgb(0 0 0 / 6%);
+
+  --container-app: 480px;
+
+  --animate-fade-in: fadeIn 0.3s ease-out;
+  --animate-slide-up: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-scale-in: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+}
 
 /*
  * 数字与拉丁字母使用圆体粗字，中文使用 Noto Sans SC。
@@ -32,36 +71,58 @@
   color-scheme: light;
 }
 
-/* ===== 老年人模式 =====
- * 通过根字号缩放所有 rem 单位的页面文字与间距，并为常用操作补足触控面积。
- */
-html.senior-mode {
+/* ===== 老年人模式 ===== */
+html.senior-mode,
+html[data-density='senior'] {
   font-size: 20px;
 }
 
-html.senior-mode body {
+html.senior-mode body,
+html[data-density='senior'] body {
   font-weight: 500;
   -webkit-font-smoothing: auto;
 }
 
-html.senior-mode .text-xs {
+html.senior-mode .text-xs,
+html[data-density='senior'] .text-xs {
   font-size: 0.85rem;
   line-height: 1.45rem;
 }
 
-html.senior-mode .text-\[10px\] {
+html.senior-mode .text-\[10px\],
+html[data-density='senior'] .text-\[10px\] {
   font-size: 0.8rem;
 }
 
 html.senior-mode button,
-html.senior-mode [role='button'] {
+html.senior-mode [role='button'],
+html[data-density='senior'] button,
+html[data-density='senior'] [role='button'] {
   min-height: 56px;
 }
 
 html.senior-mode input,
 html.senior-mode select,
-html.senior-mode textarea {
+html.senior-mode textarea,
+html[data-density='senior'] input,
+html[data-density='senior'] select,
+html[data-density='senior'] textarea {
   font-size: 1rem;
+}
+
+html[data-density='senior'] .k-button,
+html[data-density='senior'] .k-list-input,
+html[data-density='senior'] .k-list-item,
+html[data-density='senior'] .k-dialog-button,
+html[data-density='senior'] .k-tabbar-link,
+html[data-density='senior'] .k-segmented-button {
+  min-height: 56px;
+}
+
+html[data-density='senior'] .k-button,
+html[data-density='senior'] .k-list-input,
+html[data-density='senior'] .k-list-item {
+  font-size: 1.063rem;
 }
 
 /* ===== 暗色 ===== */

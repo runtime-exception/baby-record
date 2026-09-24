@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useMessage } from 'naive-ui';
-import { NInput, NInputNumber, NSelect, NSwitch } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppSheet from '@/design-system/AppSheet.vue';
+import AppInput from '@/design-system/AppInput.vue';
+import AppSelect from '@/design-system/AppSelect.vue';
+import AppToggle from '@/design-system/AppToggle.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
@@ -26,7 +29,7 @@ import { fmtDateTime } from '@/utils/format';
 
 const props = defineProps<{ entry: TimelineEntry | null }>();
 const emit = defineEmits<{ close: []; saved: []; remove: [] }>();
-const message = useMessage();
+const message = useAppFeedback();
 const themeStore = useThemeStore();
 
 const time = ref(0);
@@ -214,12 +217,15 @@ async function onSave() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="entry" class="fixed inset-0 z-50 flex items-end justify-center">
-      <div class="absolute inset-0 bg-black/40" @click="emit('close')" />
+  <AppSheet
+    :open="Boolean(entry)"
+    panel-class="bg-ios-bg rounded-t-3xl max-h-[90vh] overflow-y-auto no-scrollbar safe-bottom"
+    @close="emit('close')"
+  >
+    <template v-if="entry">
       <div
         v-if="themeStore.seniorMode"
-        class="relative w-full max-w-app bg-ios-bg rounded-t-3xl p-5 max-h-[90vh] overflow-y-auto no-scrollbar animate-slide-up safe-bottom"
+        class="relative w-full bg-ios-bg p-5"
       >
         <template v-if="seniorStep === 'summary'">
           <div class="flex items-center justify-between mb-5">
@@ -257,15 +263,15 @@ async function onSave() {
             <div v-if="entry.type === 'feeding'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-4">
               <div><p class="text-base font-semibold text-ios-label mb-3">喂养类型</p><IconPicker v-model="feedingType" :options="feedingTypeOptions" active-color="bg-ios-orange" /></div>
               <div v-if="!feedingIsComplementary"><p class="text-base font-semibold text-ios-label mb-3">奶量</p><WheelPicker v-model="amountMl" :options="Array.from({ length: 31 }, (_, i) => ({ label: `${i * 10} ml`, value: i * 10 }))" /></div>
-              <div v-if="feedingIsMixed" class="flex items-center gap-3"><span class="flex-1 text-base font-semibold text-ios-label">添加辅食</span><NSwitch v-model:value="addFoodToMixed" /></div>
-              <div v-if="feedingShowsFoods"><p class="text-base font-semibold text-ios-label mb-2">辅食</p><NSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" /></div>
+              <div v-if="feedingIsMixed" class="flex items-center gap-3"><span class="flex-1 text-base font-semibold text-ios-label">添加辅食</span><AppToggle v-model:value="addFoodToMixed" /></div>
+              <div v-if="feedingShowsFoods"><p class="text-base font-semibold text-ios-label mb-2">辅食</p><AppSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" /></div>
             </div>
             <div v-else-if="entry.type === 'diaper'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">纸尿裤类型</p><IconPicker v-model="diaperType" :options="diaperTypeOptions" active-color="bg-ios-blue" /></div>
             <div v-else-if="entry.type === 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">体温</p><WheelPicker v-model="temperature" :options="Array.from({ length: 51 }, (_, i) => ({ label: `${(36 + i / 10).toFixed(1)}℃`, value: 36 + i / 10 }))" /></div>
-            <div v-else-if="entry.type === 'supplement'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-4"><div><p class="text-base font-semibold text-ios-label mb-2">名称</p><NInput v-model:value="supplementName" size="large" /></div><div><p class="text-base font-semibold text-ios-label mb-2">剂量</p><NInput v-model:value="amount" size="large" /></div></div>
-            <div v-else-if="entry.type === 'activity'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">事件类型</p><NInput v-model:value="eventType" size="large" /></div>
+            <div v-else-if="entry.type === 'supplement'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-4"><div><p class="text-base font-semibold text-ios-label mb-2">名称</p><AppInput v-model:value="supplementName" /></div><div><p class="text-base font-semibold text-ios-label mb-2">剂量</p><AppInput v-model:value="amount" /></div></div>
+            <div v-else-if="entry.type === 'activity'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">事件类型</p><AppInput v-model:value="eventType" /></div>
             <div v-else class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-lg font-semibold text-ios-label">睡眠记录</p><p class="text-base text-ios-secondary mt-2">可在“修改时间”中调整开始和结束时间。</p></div>
-            <div v-if="entry.type !== 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">备注（选填）</p><NInput v-model:value="remark" type="textarea" :autosize="{ minRows: 3 }" /></div>
+            <div v-if="entry.type !== 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">备注（选填）</p><AppInput v-model:value="remark" textarea :rows="3" /></div>
           </div>
           <button class="w-full mt-4 min-h-16 rounded-2xl bg-ios-blue text-white text-lg font-semibold" @click="seniorStep = 'confirm'">下一步</button>
         </template>
@@ -279,7 +285,7 @@ async function onSave() {
 
       <div
         v-else
-        class="relative w-full max-w-app bg-ios-bg rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar animate-slide-up safe-bottom"
+        class="relative w-full bg-ios-bg p-5"
       >
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-bold text-ios-label">编辑{{ entryTitle }}</h3>
@@ -316,11 +322,11 @@ async function onSave() {
             </div>
             <div v-if="feedingIsMixed" class="bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3">
               <span class="flex-1 text-sm font-medium text-ios-label">添加辅食</span>
-              <NSwitch v-model:value="addFoodToMixed" />
+              <AppToggle v-model:value="addFoodToMixed" />
             </div>
             <div v-if="feedingShowsFoods" class="bg-ios-card rounded-3xl p-4 shadow-card">
               <label class="text-sm font-medium text-ios-secondary">辅食</label>
-              <NSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" class="mt-2" />
+              <AppSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" class="mt-2" />
             </div>
           </template>
 
@@ -337,28 +343,28 @@ async function onSave() {
           <template v-if="entry.type === 'supplement'">
             <div class="bg-ios-card rounded-3xl p-4 shadow-card">
               <label class="text-sm font-medium text-ios-secondary">名称</label>
-              <NInput v-model:value="supplementName" class="mt-2" />
+              <AppInput v-model:value="supplementName" class="mt-2" />
             </div>
             <div class="bg-ios-card rounded-3xl p-4 shadow-card grid grid-cols-3 gap-2">
               <WheelPicker v-model="amount" :options="Array.from({ length: 11 }, (_, value) => ({ label: String(value), value: String(value) }))" class="col-span-2" />
-              <NInput v-model:value="unit" placeholder="单位" />
+              <AppInput v-model:value="unit" placeholder="单位" />
             </div>
           </template>
 
           <template v-if="entry.type === 'activity'">
             <div class="bg-ios-card rounded-3xl p-4 shadow-card">
               <label class="text-sm font-medium text-ios-secondary">事件类型</label>
-              <NInput v-model:value="eventType" class="mt-2" />
+              <AppInput v-model:value="eventType" class="mt-2" />
             </div>
             <div class="bg-ios-card rounded-3xl p-4 shadow-card">
               <label class="text-sm font-medium text-ios-secondary">描述</label>
-              <NInput v-model:value="description" type="textarea" :autosize="{ minRows: 2 }" class="mt-2" />
+              <AppInput v-model:value="description" textarea :rows="2" class="mt-2" />
             </div>
           </template>
 
           <div class="bg-ios-card rounded-3xl p-4 shadow-card">
             <label class="text-sm font-medium text-ios-secondary">备注</label>
-            <NInput v-model:value="remark" type="textarea" :autosize="{ minRows: 2 }" class="mt-2" />
+            <AppInput v-model:value="remark" textarea :rows="2" class="mt-2" />
           </div>
 
           <button
@@ -370,6 +376,6 @@ async function onSave() {
           </button>
         </div>
       </div>
-    </div>
-  </Teleport>
+    </template>
+  </AppSheet>
 </template>

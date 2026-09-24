@@ -2,7 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import VChart from 'vue-echarts';
 import '@/utils/echarts';
-import { NDatePicker } from 'naive-ui';
+import AppDatePicker from '@/design-system/AppDatePicker.vue';
+import AppPullToRefresh from '@/design-system/AppPullToRefresh.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import TypeSegment from '@/components/form/TypeSegment.vue';
 import { chartApi } from '@/api/chart';
@@ -298,6 +299,7 @@ watch([range, startDate, endDate], loadAll);
 </script>
 
 <template>
+  <AppPullToRefresh @refresh="loadAll">
   <div>
     <AppHeader title="统计" subtitle="宝宝成长趋势" />
 
@@ -306,9 +308,9 @@ watch([range, startDate, endDate], loadAll);
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <TypeSegment v-model="range" :options="rangeOptions" />
         <div v-if="range === 'custom'" class="mt-3 flex items-center gap-2">
-          <NDatePicker v-model:value="startDate" type="date" class="flex-1" :is-date-disabled="isFutureDate" />
+          <AppDatePicker v-model:value="startDate" type="date" class="flex-1" :is-date-disabled="isFutureDate" />
           <span class="text-ios-secondary text-sm">至</span>
-          <NDatePicker v-model:value="endDate" type="date" class="flex-1" :is-date-disabled="isFutureDate" />
+          <AppDatePicker v-model:value="endDate" type="date" class="flex-1" :is-date-disabled="isFutureDate" />
         </div>
       </div>
 
@@ -429,4 +431,5 @@ watch([range, startDate, endDate], loadAll);
       </template>
     </div>
   </div>
+  </AppPullToRefresh>
 </template>

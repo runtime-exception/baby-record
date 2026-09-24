@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage } from 'naive-ui';
-import { NInput } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppInput from '@/design-system/AppInput.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
@@ -13,7 +13,7 @@ import { useDashboardStore } from '@/stores/dashboard';
 import { ALL_DIAPER_TYPES, DIAPER_TYPE_LABELS, type DiaperType } from '@baby-record/shared';
 
 const router = useRouter();
-const message = useMessage();
+const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
 const dashStore = useDashboardStore();
@@ -72,10 +72,10 @@ async function onSubmit() {
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">备注</label>
-        <NInput
+        <AppInput
           v-model:value="remark"
-          type="textarea"
-          :autosize="{ minRows: 2 }"
+          textarea
+          :rows="2"
           placeholder="选填"
           class="mt-2"
         />

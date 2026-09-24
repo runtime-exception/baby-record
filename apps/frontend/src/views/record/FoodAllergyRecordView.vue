@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { NInput, NSelect, useDialog, useMessage } from 'naive-ui';
+import { useAppDialog } from '@/design-system/dialog';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppInput from '@/design-system/AppInput.vue';
+import AppSelect from '@/design-system/AppSelect.vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
@@ -23,8 +26,8 @@ import {
 
 const route = useRoute();
 const router = useRouter();
-const message = useMessage();
-const dialog = useDialog();
+const message = useAppFeedback();
+const dialog = useAppDialog();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
 const dashboardStore = useDashboardStore();
@@ -107,14 +110,13 @@ async function save() {
   };
 
   if (finalConclusion.value !== scoreResult.value.conclusion) {
-    dialog.warning({
+    const confirmed = await dialog.confirm({
       title: '结论与系统建议不同',
       content: `系统建议为“${ALLERGY_CONCLUSION_LABELS[scoreResult.value.conclusion]}”，仍按你的结论保存吗？`,
       positiveText: '按我的结论保存',
       negativeText: '返回检查',
-      onPositiveClick: run,
     });
-    return;
+    if (!confirmed) return;
   }
   await run();
 }
@@ -129,7 +131,7 @@ onMounted(load);
       <section class="bg-ios-card rounded-3xl p-4 shadow-card space-y-4">
         <div>
           <label class="text-sm font-medium text-ios-secondary">辅食</label>
-          <NSelect v-model:value="foodId" :options="foodOptions" filterable placeholder="请选择本次排敏的辅食" class="mt-2" />
+          <AppSelect v-model:value="foodId" :options="foodOptions" filterable placeholder="请选择本次排敏的辅食" class="mt-2" />
         </div>
         <div>
           <label class="text-sm font-medium text-ios-secondary">进食时间</label>
@@ -182,7 +184,7 @@ onMounted(load);
 
       <section class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">备注</label>
-        <NInput v-model:value="remark" type="textarea" :autosize="{ minRows: 2 }" placeholder="选填，如进食量、照片位置、就医情况" class="mt-2" />
+        <AppInput v-model:value="remark" textarea :rows="2" placeholder="选填，如进食量、照片位置、就医情况" class="mt-2" />
       </section>
 
       <button class="w-full rounded-2xl bg-ios-orange py-3.5 font-semibold text-white disabled:opacity-60" :disabled="submitting" @click="save">{{ submitting ? '保存中…' : '保存排敏记录' }}</button>

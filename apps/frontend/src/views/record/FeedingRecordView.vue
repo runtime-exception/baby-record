@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage } from 'naive-ui';
-import { NInput, NSelect, NSwitch } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppInput from '@/design-system/AppInput.vue';
+import AppSelect from '@/design-system/AppSelect.vue';
+import AppToggle from '@/design-system/AppToggle.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
@@ -15,7 +17,7 @@ import { useDashboardStore } from '@/stores/dashboard';
 import { ALL_FEEDING_TYPES, FEEDING_TYPE_LABELS, type FeedingType } from '@baby-record/shared';
 
 const router = useRouter();
-const message = useMessage();
+const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
 const dashStore = useDashboardStore();
@@ -103,20 +105,20 @@ async function onSubmit() {
           <p class="text-sm font-medium text-ios-label">添加辅食</p>
           <p class="text-xs text-ios-secondary mt-0.5">选填，可同时记录本餐辅食</p>
         </div>
-        <NSwitch v-model:value="addFoodToMixed" aria-label="添加辅食" />
+        <AppToggle v-model:value="addFoodToMixed" aria-label="添加辅食" />
       </div>
 
       <div v-if="showFoodPicker" class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">辅食{{ isComplementaryFood ? '（必选）' : '（选填）' }}</label>
-        <NSelect v-model:value="foodIds" multiple filterable :options="foodOptions" placeholder="请选择辅食" class="mt-2" />
+        <AppSelect v-model:value="foodIds" multiple filterable :options="foodOptions" placeholder="请选择辅食" class="mt-2" />
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">备注</label>
-        <NInput
+        <AppInput
           v-model:value="remark"
-          type="textarea"
-          :autosize="{ minRows: 2 }"
+          textarea
+          :rows="2"
           placeholder="选填"
           class="mt-2"
         />

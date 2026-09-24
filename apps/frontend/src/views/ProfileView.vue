@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { NIcon, NSwitch, useMessage } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppToggle from '@/design-system/AppToggle.vue';
 import { EyeOutline } from '@vicons/ionicons5';
 import { babyApi } from '@/api/baby';
 import { useRouter } from 'vue-router';
@@ -10,7 +11,7 @@ import { useUserStore } from '@/stores/user';
 import { useBabyStore } from '@/stores/baby';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore } from '@/stores/auth';
-import type { ThemeMode } from '@/stores/theme';
+import type { ThemeMode, UiTheme } from '@/stores/theme';
 import { GENDER_LABELS, USER_ROLE_LABELS } from '@baby-record/shared';
 
 const userStore = useUserStore();
@@ -18,7 +19,7 @@ const babyStore = useBabyStore();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const router = useRouter();
-const message = useMessage();
+const message = useAppFeedback();
 const avatarInput = ref<HTMLInputElement | null>(null);
 
 const themeOptions: { label: string; value: ThemeMode }[] = [
@@ -26,6 +27,14 @@ const themeOptions: { label: string; value: ThemeMode }[] = [
   { label: '深色', value: 'dark' },
   { label: '跟随系统', value: 'auto' },
 ];
+const uiThemeOptions: { label: string; value: UiTheme }[] = [
+  { label: 'iOS', value: 'ios' },
+  { label: 'Material', value: 'material' },
+];
+const uiTheme = computed({
+  get: () => themeStore.uiTheme,
+  set: (value: UiTheme) => themeStore.setUiTheme(value),
+});
 const themeMode = computed({
   get: () => themeStore.mode,
   set: (v: ThemeMode) => themeStore.setMode(v),
@@ -161,17 +170,22 @@ async function logout() {
     <section class="px-5 mt-4">
       <h2 class="text-sm font-semibold text-ios-secondary mb-2 px-1">外观</h2>
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
+        <p class="mb-2 text-xs font-medium text-ios-secondary">界面主题</p>
+        <TypeSegment v-model="uiTheme" :options="uiThemeOptions" />
+      </div>
+      <div class="bg-ios-card rounded-3xl p-4 shadow-card mt-3">
+        <p class="mb-2 text-xs font-medium text-ios-secondary">明暗模式</p>
         <TypeSegment v-model="themeMode" :options="themeOptions" />
       </div>
       <div class="bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3 mt-3">
         <div class="w-11 h-11 rounded-2xl bg-ios-orange/15 text-ios-orange flex items-center justify-center">
-          <NIcon :component="EyeOutline" :size="24" />
+          <EyeOutline class="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold text-ios-label">老年人模式</p>
           <p class="text-xs text-ios-secondary mt-0.5">放大文字和按钮，提高阅读清晰度</p>
         </div>
-        <NSwitch v-model:value="seniorMode" aria-label="老年人模式" />
+        <AppToggle v-model:value="seniorMode" aria-label="老年人模式" />
       </div>
     </section>
 

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue';
-import { NDatePicker, useDialog, useMessage } from 'naive-ui';
+import { useAppDialog } from '@/design-system/dialog';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppDateRangePicker from '@/design-system/AppDateRangePicker.vue';
+import AppPullToRefresh from '@/design-system/AppPullToRefresh.vue';
+import AppSheet from '@/design-system/AppSheet.vue';
+import { useLongPress } from '@/design-system/useLongPress';
+import { consumeSuppressedClick } from '@/design-system/gesture-values';
 import AppHeader from '@/components/AppHeader.vue';
 import EditRecordModal from '@/components/EditRecordModal.vue';
 import { recordApi } from '@/api/record';
@@ -37,8 +43,8 @@ withDefaults(defineProps<{
 const babyStore = useBabyStore();
 const router = useRouter();
 const themeStore = useThemeStore();
-const dialog = useDialog();
-const message = useMessage();
+const dialog = useAppDialog();
+const message = useAppFeedback();
 
 // 范围值用「当天 00:00」对齐 Naive UI 日历格子的时间戳；
 // end 不用 23:59:59.999 —— 那个值会被 isFuture 判为未来，导致输入框截止日期被划删除线。
@@ -50,6 +56,12 @@ const loading = ref(false);
 const items = ref<TimelineEntry[]>([]);
 const editingEntry = ref<TimelineEntry | null>(null);
 const detailEntry = ref<TimelineEntry | null>(null);
+const contextEntry = ref<TimelineEntry | null>(null);
+const suppressClickAfterLongPress = ref(false);
+const longPress = useLongPress<TimelineEntry>((entry) => {
+  suppressClickAfterLongPress.value = true;
+  contextEntry.value = entry;
+});
 
 function buildItems(d: DailyRecords): TimelineEntry[] {
   const arr: TimelineEntry[] = [];
@@ -150,27 +162,27 @@ async function load() {
 
 async function removeEntry(e: TimelineEntry) {
   const r = e.raw as { id: number };
-  dialog.warning({
+  const confirmed = await dialog.confirm({
     title: '删除记录',
     content: `确定删除这条「${e.title}」记录吗？`,
     positiveText: '删除',
     negativeText: '取消',
-    onPositiveClick: async () => {
-      try {
-        if (e.type === 'feeding') await feedingApi.remove(r.id);
-        else if (e.type === 'diaper') await diaperApi.remove(r.id);
-        else if (e.type === 'sleep') await sleepApi.remove(r.id);
-        else if (e.type === 'supplement') await supplementApi.remove(r.id);
-        else if (e.type === 'activity') await activityApi.remove(r.id);
-        else if (e.type === 'temperature') await temperatureApi.remove(r.id);
-        else if (e.type === 'foodAllergy') await foodAllergyApi.remove(r.id);
-        message.success('已删除');
-        load();
-      } catch {
-        // 错误已由拦截器提示
-      }
-    },
   });
+  if (!confirmed) return;
+
+  try {
+    if (e.type === 'feeding') await feedingApi.remove(r.id);
+    else if (e.type === 'diaper') await diaperApi.remove(r.id);
+    else if (e.type === 'sleep') await sleepApi.remove(r.id);
+    else if (e.type === 'supplement') await supplementApi.remove(r.id);
+    else if (e.type === 'activity') await activityApi.remove(r.id);
+    else if (e.type === 'temperature') await temperatureApi.remove(r.id);
+    else if (e.type === 'foodAllergy') await foodAllergyApi.remove(r.id);
+    message.success('已删除');
+    load();
+  } catch {
+    // 错误已由拦截器提示
+  }
 }
 
 function removeEditingEntry() {
@@ -183,6 +195,16 @@ function removeEditingEntry() {
 function editEntry(entry: TimelineEntry) {
   if (entry.type === 'foodAllergy') router.push(`/record/food-allergy/${entry.raw.id}`);
   else editingEntry.value = entry;
+}
+
+function openContextMenu(entry: TimelineEntry) {
+  suppressClickAfterLongPress.value = true;
+  contextEntry.value = entry;
+}
+
+function handleItemClick(entry: TimelineEntry) {
+  if (consumeSuppressedClick(suppressClickAfterLongPress)) return;
+  detailEntry.value = entry;
 }
 
 const filteredItems = computed(() => selectedType.value === 'all' ? items.value : items.value.filter((item) => item.type === selectedType.value));
@@ -211,6 +233,7 @@ watch(dateRange, load, { deep: true });
 </script>
 
 <template>
+  <AppPullToRefresh @refresh="load">
   <div>
     <AppHeader :title="title" :show-back="showBack" />
 
@@ -219,7 +242,7 @@ watch(dateRange, load, { deep: true });
     <div class="px-5 mt-4">
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <p class="text-sm font-medium text-ios-secondary mb-2">时间范围</p>
-        <NDatePicker v-model:value="dateRange" type="daterange" class="w-full" :is-date-disabled="isFutureDate" clearable />
+        <AppDateRangePicker v-model:value="dateRange" :is-date-disabled="isFutureDate" />
         <div class="flex gap-2 overflow-x-auto no-scrollbar mt-3">
           <button v-for="option in typeOptions" :key="option.value" class="shrink-0 px-3 py-1.5 rounded-xl text-xs" :class="selectedType === option.value ? 'bg-ios-blue text-white' : 'bg-ios-fill text-ios-secondary'" @click="selectedType = option.value">{{ option.label }}</button>
         </div>
@@ -247,7 +270,18 @@ watch(dateRange, load, { deep: true });
             <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" :class="it.colorClass"></span>
             <span v-if="i < filteredItems.length - 1" class="flex-1 w-px bg-ios-separator mt-1 mb-1"></span>
           </div>
-          <div class="flex-1 bg-ios-card rounded-2xl p-3.5 shadow-card mb-3 animate-slide-up text-left cursor-pointer" role="button" tabindex="0" @click="detailEntry = it" @keydown.enter="detailEntry = it">
+          <div
+            class="flex-1 bg-ios-card rounded-2xl p-3.5 shadow-card mb-3 animate-slide-up text-left cursor-pointer"
+            role="button"
+            tabindex="0"
+            @click="handleItemClick(it)"
+            @keydown.enter="handleItemClick(it)"
+            @pointerdown="longPress.start(it, $event)"
+            @pointermove="longPress.move"
+            @pointerup="longPress.end"
+            @pointercancel="longPress.end"
+            @contextmenu.prevent="openContextMenu(it)"
+          >
             <div class="flex items-center gap-2">
               <span class="text-lg">{{ it.icon }}</span>
               <span class="text-sm font-semibold text-ios-label flex-1">{{ it.title }}</span>
@@ -267,10 +301,12 @@ watch(dateRange, load, { deep: true });
     </div>
 
     <EditRecordModal :entry="editingEntry" @close="editingEntry = null" @saved="editingEntry = null; load()" @remove="removeEditingEntry" />
-    <Teleport to="body">
-      <div v-if="detailEntry" class="fixed inset-0 z-50 flex items-end justify-center">
-        <div class="absolute inset-0 bg-black/40" @click="detailEntry = null" />
-        <section class="relative w-full max-w-app bg-ios-bg rounded-t-3xl p-5 safe-bottom animate-slide-up">
+    <AppSheet
+      :open="Boolean(detailEntry)"
+      panel-class="bg-ios-bg rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar safe-bottom"
+      @close="detailEntry = null"
+    >
+        <section v-if="detailEntry" class="relative w-full">
           <div class="flex items-center gap-3 mb-4"><span class="text-2xl">{{ detailEntry.icon }}</span><h2 class="text-lg font-bold text-ios-label flex-1">{{ detailEntry.title }}详情</h2><button class="text-sm text-ios-secondary" @click="detailEntry = null">关闭</button></div>
           <div class="bg-ios-card rounded-2xl p-4 space-y-3 text-sm">
             <div class="flex justify-between gap-4"><span class="text-ios-secondary">记录时间</span><span class="text-ios-label">{{ new Date(detailEntry.time).toLocaleString('zh-CN', { hour12: false }) }}</span></div>
@@ -281,7 +317,38 @@ watch(dateRange, load, { deep: true });
           </div>
           <button class="w-full mt-4 rounded-2xl bg-ios-blue text-white font-semibold" :class="themeStore.seniorMode ? 'min-h-16 text-xl' : 'py-3.5'" @click="editEntry(detailEntry); detailEntry = null">修改记录</button>
         </section>
+    </AppSheet>
+
+    <AppSheet
+      :open="Boolean(contextEntry)"
+      title="记录操作"
+      panel-class="bg-ios-bg rounded-t-3xl p-5 max-h-[70vh] overflow-y-auto no-scrollbar safe-bottom"
+      @close="contextEntry = null"
+    >
+      <div v-if="contextEntry" class="space-y-3">
+        <button
+          type="button"
+          class="w-full rounded-2xl bg-ios-card py-3.5 font-semibold text-ios-blue shadow-card"
+          @click="editEntry(contextEntry); contextEntry = null"
+        >
+          编辑记录
+        </button>
+        <button
+          type="button"
+          class="w-full rounded-2xl bg-ios-card py-3.5 font-semibold text-ios-pink shadow-card"
+          @click="removeEntry(contextEntry); contextEntry = null"
+        >
+          删除记录
+        </button>
+        <button
+          type="button"
+          class="w-full rounded-2xl bg-ios-fill/60 py-3.5 font-semibold text-ios-label"
+          @click="contextEntry = null"
+        >
+          取消
+        </button>
       </div>
-    </Teleport>
+    </AppSheet>
   </div>
+  </AppPullToRefresh>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
@@ -11,7 +11,7 @@ import { useUserStore } from '@/stores/user';
 import { useDashboardStore } from '@/stores/dashboard';
 
 const router = useRouter();
-const message = useMessage();
+const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
 const dashboardStore = useDashboardStore();

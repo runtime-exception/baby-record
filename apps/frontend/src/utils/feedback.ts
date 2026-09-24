@@ -1,6 +1,4 @@
-import { createDiscreteApi } from 'naive-ui';
+import { appFeedback } from '@/design-system/feedback';
 
-// 全局离散 message 实例，供 API 层与组件直接调用（不依赖组件树 Provider）
-const { message } = createDiscreteApi(['message']);
-
-export const $message = message;
+// 全局反馈调度器，供 API 层与组件直接调用，不依赖组件树上下文。
+export const $message = appFeedback;

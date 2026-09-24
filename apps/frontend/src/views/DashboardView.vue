@@ -8,7 +8,8 @@ import StatCard from '@/components/StatCard.vue';
 import QuickActionButton from '@/components/QuickActionButton.vue';
 import { fmtTime, minutesToText } from '@/utils/format';
 import { getTempStatus } from '@baby-record/shared';
-import { NModal } from 'naive-ui';
+import AppSheet from '@/design-system/AppSheet.vue';
+import AppPullToRefresh from '@/design-system/AppPullToRefresh.vue';
 
 const router = useRouter();
 const babyStore = useBabyStore();
@@ -178,6 +179,7 @@ const feedingAdvice = computed(() => {
 </script>
 
 <template>
+  <AppPullToRefresh @refresh="refresh">
   <div>
   <div v-if="loading && !baby" class="px-5 pt-14 safe-top animate-fade-in">
     <div class="flex items-center gap-3 mb-5">
@@ -372,12 +374,11 @@ const feedingAdvice = computed(() => {
     </section>
   </div>
 
-  <NModal
-    v-model:show="showAllergyDetail"
-    preset="card"
+  <AppSheet
+    :open="showAllergyDetail"
     title="宝宝辅食排敏情况"
-    :bordered="false"
-    :style="{ width: 'calc(100vw - 40px)', maxWidth: '420px' }"
+    panel-class="bg-ios-bg rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar safe-bottom"
+    @close="showAllergyDetail = false"
   >
     <div class="space-y-5 text-ios-label">
       <section>
@@ -412,14 +413,13 @@ const feedingAdvice = computed(() => {
 
       <button class="w-full rounded-2xl bg-ios-orange py-3 font-semibold text-white" @click="showAllergyDetail = false; router.push('/record/food-allergy')">新增排敏记录</button>
     </div>
-  </NModal>
+  </AppSheet>
 
-  <NModal
-    v-model:show="showSleepAdvice"
-    preset="card"
+  <AppSheet
+    :open="showSleepAdvice"
     title="哄睡时间建议"
-    :bordered="false"
-    :style="{ width: 'calc(100vw - 40px)', maxWidth: '420px' }"
+    panel-class="bg-ios-bg rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar safe-bottom"
+    @close="showSleepAdvice = false"
   >
     <div v-if="sleepAdvice" class="space-y-4 text-ios-label">
       <div class="rounded-2xl bg-ios-fill/40 p-4 text-center">
@@ -467,14 +467,13 @@ const feedingAdvice = computed(() => {
         清醒窗口是按月龄估算的日常参考，不同宝宝和同一宝宝每天的睡眠需求都可能不同，请优先观察打哈欠、揉眼和活动减少等困倦信号。
       </p>
     </div>
-  </NModal>
+  </AppSheet>
 
-  <NModal
-    v-model:show="showFeedingAdvice"
-    preset="card"
+  <AppSheet
+    :open="showFeedingAdvice"
     title="喂养建议"
-    :bordered="false"
-    :style="{ width: 'calc(100vw - 40px)', maxWidth: '420px' }"
+    panel-class="bg-ios-bg rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar safe-bottom"
+    @close="showFeedingAdvice = false"
   >
     <div v-if="feedingAdvice" class="space-y-4 text-ios-label">
       <div class="rounded-2xl bg-ios-fill/40 p-4 text-center">
@@ -541,6 +540,7 @@ const feedingAdvice = computed(() => {
         喂养间隔和奶量按月龄估算，仅供参考。不同宝宝和同一宝宝每天的奶量都可能不同，母乳提倡按需喂养，请优先观察宝宝的饥饿信号，必要时咨询儿科医生。
       </p>
     </div>
-  </NModal>
+  </AppSheet>
   </div>
+  </AppPullToRefresh>
 </template>

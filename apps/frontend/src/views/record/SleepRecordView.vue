@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, h, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useDialog, useMessage } from 'naive-ui';
+import { useAppDialog } from '@/design-system/dialog';
+import { useAppFeedback } from '@/design-system/feedback';
 import AppHeader from '@/components/AppHeader.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import { useRecordStore } from '@/stores/record';
@@ -12,8 +13,8 @@ import { fmtDateTime, fmtTime, minutesSince, minutesToText } from '@/utils/forma
 import { type SleepType } from '@baby-record/shared';
 
 const router = useRouter();
-const dialog = useDialog();
-const message = useMessage();
+const dialog = useAppDialog();
+const message = useAppFeedback();
 const recordStore = useRecordStore();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
@@ -93,7 +94,7 @@ async function onEnd() {
   }
 }
 
-function confirmQuickSleep(option: (typeof quickSleepOptions)[number]) {
+async function confirmQuickSleep(option: (typeof quickSleepOptions)[number]) {
   const baby = babyStore.currentBaby;
   const user = userStore.currentUser;
   if (!baby || !user) {
@@ -103,7 +104,7 @@ function confirmQuickSleep(option: (typeof quickSleepOptions)[number]) {
 
   const endTime = new Date();
   const startTime = new Date(endTime.getTime() - option.minutes * 60_000);
-  dialog.warning({
+  const confirmed = await dialog.confirm({
     title: '新增快捷睡眠记录？',
     content: () => h('div', { class: 'space-y-3 pt-1' }, [
       h('p', { class: 'text-sm text-ios-secondary' }, `将新增一条已完成的${option.label}记录`),
@@ -124,27 +125,24 @@ function confirmQuickSleep(option: (typeof quickSleepOptions)[number]) {
     ]),
     positiveText: '确认新增',
     negativeText: '取消',
-    onPositiveClick: async () => {
-      // 防止网络延迟下重复点击「确认新增」导致重复提交
-      if (quickSubmitting.value) return false;
-      quickSubmitting.value = true;
-      try {
-        await sleepApi.create({
-          babyId: baby.id,
-          creatorId: user.id,
-          sleepType: sleepType.value,
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-        });
-        message.success(`已新增${option.label}记录`);
-        await router.push('/');
-      } catch {
-        return false;
-      } finally {
-        quickSubmitting.value = false;
-      }
-    },
   });
+  if (!confirmed || quickSubmitting.value) return;
+
+  // 防止网络延迟下重复点击「确认新增」导致重复提交
+  quickSubmitting.value = true;
+  try {
+    await sleepApi.create({
+      babyId: baby.id,
+      creatorId: user.id,
+      sleepType: sleepType.value,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+    });
+    message.success(`已新增${option.label}记录`);
+    await router.push('/');
+  } finally {
+    quickSubmitting.value = false;
+  }
 }
 </script>
 

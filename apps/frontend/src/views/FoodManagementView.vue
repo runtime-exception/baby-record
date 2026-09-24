@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { NInput, NModal, useMessage } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppSheet from '@/design-system/AppSheet.vue';
+import AppInput from '@/design-system/AppInput.vue';
+import AppPullToRefresh from '@/design-system/AppPullToRefresh.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { foodApi } from '@/api/food';
 import type { FoodVo } from '@baby-record/shared';
 
-const message = useMessage();
+const message = useAppFeedback();
 const foods = ref<FoodVo[]>([]);
 const loading = ref(false);
 const newName = ref('');
@@ -64,18 +67,19 @@ onMounted(load);
 </script>
 
 <template>
+  <AppPullToRefresh @refresh="load">
   <div>
     <AppHeader title="辅食管理" subtitle="家庭内所有宝宝共享" show-back />
     <div class="px-5 mt-4 space-y-3">
       <section class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">添加辅食</label>
         <div class="mt-2 flex gap-2">
-          <NInput v-model:value="newName" maxlength="30" placeholder="如：玉米" @keyup.enter="addFood" />
+          <AppInput v-model:value="newName" :maxlength="30" placeholder="如：玉米" @keyup.enter="addFood" />
           <button class="shrink-0 rounded-2xl bg-ios-blue px-4 text-sm font-semibold text-white" @click="addFood">添加</button>
         </div>
       </section>
 
-      <NInput v-model:value="query" clearable placeholder="搜索辅食" />
+      <AppInput v-model:value="query" clearable placeholder="搜索辅食" />
 
       <div v-if="loading" class="py-12 text-center text-sm text-ios-secondary">加载中…</div>
       <section v-else class="bg-ios-card rounded-3xl shadow-card divide-y divide-ios-separator/60">
@@ -92,9 +96,15 @@ onMounted(load);
       </section>
     </div>
 
-    <NModal v-model:show="showEditing" preset="card" title="修改辅食名称" :style="{ width: 'calc(100vw - 40px)', maxWidth: '420px' }">
-      <NInput v-model:value="editingName" maxlength="30" @keyup.enter="saveEdit" />
+    <AppSheet
+      :open="showEditing"
+      title="修改辅食名称"
+      panel-class="bg-ios-bg rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar safe-bottom"
+      @close="showEditing = false"
+    >
+      <AppInput v-model:value="editingName" :maxlength="30" @keyup.enter="saveEdit" />
       <button class="mt-4 w-full rounded-2xl bg-ios-blue py-3 text-sm font-semibold text-white" @click="saveEdit">保存</button>
-    </NModal>
+    </AppSheet>
   </div>
+  </AppPullToRefresh>
 </template>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage } from 'naive-ui';
-import { NInput } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppInput from '@/design-system/AppInput.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import TypeSegment from '@/components/form/TypeSegment.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
@@ -17,7 +17,7 @@ import { useDashboardStore } from '@/stores/dashboard';
 type Category = 'supplement' | 'allergy' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'height' | 'weight';
 
 const router = useRouter();
-const message = useMessage();
+const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
 const dashboardStore = useDashboardStore();
@@ -204,7 +204,7 @@ async function onSubmit() {
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">补剂名称</label>
           <TypeSegment v-model="supplementName" :options="supplementNameOptions" class="mt-2" />
-          <NInput
+          <AppInput
             v-if="supplementName === '其他'"
             v-model:value="customName"
             placeholder="请输入补剂名称"
@@ -215,7 +215,7 @@ async function onSubmit() {
           <label class="text-sm font-medium text-ios-secondary">剂量</label>
           <div class="mt-2 grid grid-cols-3 gap-2 items-center">
             <WheelPicker v-model="amount" :options="Array.from({ length: 11 }, (_, value) => ({ label: String(value), value }))" class="col-span-2" />
-            <NInput v-model:value="unit" placeholder="单位" />
+            <AppInput v-model:value="unit" placeholder="单位" />
           </div>
         </div>
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
@@ -254,10 +254,10 @@ async function onSubmit() {
         </div>
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">备注</label>
-          <NInput
+          <AppInput
             v-model:value="growthRemark"
-            type="textarea"
-            :autosize="{ minRows: 2 }"
+            textarea
+            :rows="2"
             placeholder="如：社区医院体检时测量"
             class="mt-2"
           />
@@ -272,10 +272,10 @@ async function onSubmit() {
         </div>
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">描述</label>
-          <NInput
+          <AppInput
             v-model:value="description"
-            type="textarea"
-            :autosize="{ minRows: 2 }"
+            textarea
+            :rows="2"
             placeholder="如：抬头坚持了 10 秒"
             class="mt-2"
           />

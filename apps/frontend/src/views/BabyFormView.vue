@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useMessage } from 'naive-ui';
-import { NInput, NInputNumber, NDatePicker } from 'naive-ui';
+import { useAppFeedback } from '@/design-system/feedback';
+import AppDatePicker from '@/design-system/AppDatePicker.vue';
+import AppInput from '@/design-system/AppInput.vue';
+import AppNumberInput from '@/design-system/AppNumberInput.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import TypeSegment from '@/components/form/TypeSegment.vue';
 import { babyApi } from '@/api/baby';
@@ -12,7 +14,7 @@ import { GENDER_LABELS, type Gender } from '@baby-record/shared';
 
 const router = useRouter();
 const route = useRoute();
-const message = useMessage();
+const message = useAppFeedback();
 const babyStore = useBabyStore();
 
 const isEdit = computed(() => route.name === 'baby-edit');
@@ -94,12 +96,12 @@ async function onSubmit() {
     <div class="px-5 mt-4 space-y-3">
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">姓名</label>
-        <NInput v-model:value="name" placeholder="请输入宝宝姓名" class="mt-2" />
+        <AppInput v-model:value="name" placeholder="请输入宝宝姓名" class="mt-2" />
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">昵称</label>
-        <NInput v-model:value="nickname" placeholder="选填" class="mt-2" />
+        <AppInput v-model:value="nickname" placeholder="选填" class="mt-2" />
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
@@ -109,10 +111,9 @@ async function onSubmit() {
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">出生日期</label>
-        <NDatePicker
+        <AppDatePicker
           v-model:value="birthday"
           type="date"
-          format="yyyy-MM-dd"
           class="mt-2 w-full"
           :is-date-disabled="isFutureDate"
         />
@@ -121,26 +122,26 @@ async function onSubmit() {
       <div class="bg-ios-card rounded-3xl p-4 shadow-card grid grid-cols-3 gap-3">
         <div>
           <label class="text-sm font-medium text-ios-secondary">体重(kg)</label>
-          <NInputNumber v-model:value="birthWeight" :min="0" :step="0.1" placeholder="3.5" class="mt-2 w-full" />
+          <AppNumberInput v-model:value="birthWeight" :min="0" :step="0.1" placeholder="3.5" class="mt-2 w-full" />
         </div>
         <div>
           <label class="text-sm font-medium text-ios-secondary">身高(cm)</label>
-          <NInputNumber v-model:value="birthHeight" :min="0" :step="0.5" placeholder="50" class="mt-2 w-full" />
+          <AppNumberInput v-model:value="birthHeight" :min="0" :step="0.5" placeholder="50" class="mt-2 w-full" />
         </div>
         <div>
           <label class="text-sm font-medium text-ios-secondary">头围(cm)</label>
-          <NInputNumber v-model:value="headCircumference" :min="0" :step="0.5" placeholder="34" class="mt-2 w-full" />
+          <AppNumberInput v-model:value="headCircumference" :min="0" :step="0.5" placeholder="34" class="mt-2 w-full" />
         </div>
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">出生医院</label>
-        <NInput v-model:value="birthHospital" placeholder="选填" class="mt-2" />
+        <AppInput v-model:value="birthHospital" placeholder="选填" class="mt-2" />
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">备注</label>
-        <NInput v-model:value="remark" type="textarea" :autosize="{ minRows: 2 }" placeholder="选填" class="mt-2" />
+        <AppInput v-model:value="remark" textarea :rows="2" placeholder="选填" class="mt-2" />
       </div>
 
       <button
