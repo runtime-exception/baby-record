@@ -223,3 +223,32 @@ button,
 [role='button'] {
   touch-action: manipulation;
 }
+
+/*
+ * iOS Safari 在 viewport-fit=cover 下，悬浮工具栏会覆盖在固定定位容器底部之上，
+ * 并把覆盖区域的按钮颜色取成工具栏底色。用动态视口高度把弹层底边抬到工具栏之上，
+ * 避免底部按钮被工具栏取样。
+ */
+.app-sheet-viewport {
+  height: 100dvh;
+  max-height: 100dvh;
+  /* 建立包含块，使内部 fixed 弹层相对动态视口定位，而不是相对整个可视视口。 */
+  transform: translateZ(0);
+}
+
+@supports not (height: 100dvh) {
+  .app-sheet-viewport {
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+/*
+ * 即使弹层底边已抬到工具栏之上，半透明工具栏仍会取邻近颜色。
+ * 在内容底部留出灰色区域，保证主色按钮不会紧贴弹层下边缘。
+ */
+@supports (-webkit-touch-callout: none) {
+  .app-sheet-content {
+    padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+  }
+}

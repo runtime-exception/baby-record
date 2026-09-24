@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ListInput } from 'konsta/vue';
 import {
   dateInputToTimestamp,
   timestampToDateInput,
@@ -41,14 +40,12 @@ function onInput(event: Event) {
 </script>
 
 <template>
-  <ListInput
-    component="div"
+  <input
     :value="inputValue"
     :type="type === 'date' ? 'date' : 'datetime-local'"
     :placeholder="placeholder"
     :disabled="disabled"
-    input-class="text-sm"
-    class="w-full"
+    class="h-11 w-full min-w-0 bg-transparent px-0 text-sm font-medium text-ios-label outline-none disabled:opacity-50"
     @input="onInput"
   />
 </template>

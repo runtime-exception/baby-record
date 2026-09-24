@@ -41,7 +41,7 @@ function updateEnd(value: number | null) {
       class="min-w-0 flex-1"
       @update:value="updateStart"
     />
-    <span class="shrink-0 text-sm text-ios-secondary">至</span>
+    <span class="flex h-11 shrink-0 items-center text-sm text-ios-secondary">至</span>
     <AppDatePicker
       :value="value?.[1] ?? null"
       :is-date-disabled="isDateDisabled"

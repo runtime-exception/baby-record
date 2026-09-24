@@ -52,7 +52,7 @@ const sheetStyle = computed(() => ({
 <template>
   <Dialog :open="open" @close="dismissible && emit('close')">
     <DialogOverlay class="fixed inset-0 z-40 bg-black/45" />
-    <div class="fixed inset-0 z-50 flex items-end justify-center">
+    <div class="app-sheet-viewport fixed inset-x-0 top-0 z-50 flex items-end justify-center">
       <DialogPanel ref="panel" class="w-full max-w-app">
         <Sheet
           :opened="open"
@@ -86,7 +86,9 @@ const sheetStyle = computed(() => ({
             </button>
           </div>
 
-          <slot />
+          <div class="app-sheet-content pb-4">
+            <slot />
+          </div>
         </Sheet>
       </DialogPanel>
     </div>
