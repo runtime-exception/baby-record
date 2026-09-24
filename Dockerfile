@@ -43,7 +43,7 @@ RUN pnpm install --filter @baby-record/backend --filter @baby-record/shared --pr
 
 # schema + 在运行时镜像内重新 prisma generate（确保 .prisma 生成到 @prisma/client 实际所在位置）
 COPY --from=backend-builder /app/apps/backend/prisma ./apps/backend/prisma
-RUN cd apps/backend && npx --yes prisma@5 generate --schema=prisma/schema.prisma
+RUN pnpm --filter @baby-record/backend exec prisma generate --schema=prisma/schema.prisma
 
 # 后端编译产物
 COPY --from=backend-builder /app/apps/backend/dist ./apps/backend/dist
