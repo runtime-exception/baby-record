@@ -5,6 +5,7 @@ import AppSheet from '@/design-system/AppSheet.vue';
 import AppInput from '@/design-system/AppInput.vue';
 import AppPullToRefresh from '@/design-system/AppPullToRefresh.vue';
 import AppHeader from '@/components/AppHeader.vue';
+import { splitFoodEmoji } from '@/design-system/food-emoji';
 import { foodApi } from '@/api/food';
 import type { FoodVo } from '@baby-record/shared';
 
@@ -84,9 +85,9 @@ onMounted(load);
       <div v-if="loading" class="py-12 text-center text-sm text-ios-secondary">加载中…</div>
       <section v-else class="bg-ios-card rounded-3xl shadow-card divide-y divide-ios-separator/60">
         <div v-for="food in filteredFoods" :key="food.id" class="flex items-center gap-3 px-4 py-3.5">
-          <span class="text-xl">{{ food.isActive ? '🥣' : '○' }}</span>
+          <span class="text-xl">{{ splitFoodEmoji(food.name).emoji }}</span>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold" :class="food.isActive ? 'text-ios-label' : 'text-ios-secondary'">{{ food.name }}</p>
+            <p class="truncate text-sm font-semibold" :class="food.isActive ? 'text-ios-label' : 'text-ios-secondary'">{{ splitFoodEmoji(food.name).label }}</p>
             <p class="text-xs text-ios-secondary">{{ food.isActive ? '可用于新记录' : '已停用' }}</p>
           </div>
           <button class="text-xs text-ios-blue" @click="startEdit(food)">改名</button>

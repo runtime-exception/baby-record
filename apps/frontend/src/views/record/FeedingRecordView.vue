@@ -3,10 +3,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAppFeedback } from '@/design-system/feedback';
 import AppInput from '@/design-system/AppInput.vue';
-import AppSelect from '@/design-system/AppSelect.vue';
 import AppToggle from '@/design-system/AppToggle.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
+import FoodPickerGrid from '@/components/form/FoodPickerGrid.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
 import { feedingApi } from '@/api/feeding';
@@ -34,7 +34,6 @@ const addFoodToMixed = ref(false);
 const isComplementaryFood = computed(() => feedingType.value === 'COMPLEMENTARY_FOOD');
 const isMixed = computed(() => feedingType.value === 'MIXED');
 const showFoodPicker = computed(() => isComplementaryFood.value || (isMixed.value && addFoodToMixed.value));
-const foodOptions = computed(() => foods.value.map((food) => ({ label: food.name, value: food.id })));
 
 const typeOptions = ALL_FEEDING_TYPES.map((v) => ({
   label: FEEDING_TYPE_LABELS[v],
@@ -109,8 +108,11 @@ async function onSubmit() {
       </div>
 
       <div v-if="showFoodPicker" class="bg-ios-card rounded-3xl p-4 shadow-card">
-        <label class="text-sm font-medium text-ios-secondary">辅食{{ isComplementaryFood ? '（必选）' : '（选填）' }}</label>
-        <AppSelect v-model:value="foodIds" multiple filterable :options="foodOptions" placeholder="请选择辅食" class="mt-2" />
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium text-ios-secondary">辅食{{ isComplementaryFood ? '（必选）' : '（选填）' }}</label>
+          <span v-if="foodIds.length" class="text-xs text-ios-orange">已选 {{ foodIds.length }} 种</span>
+        </div>
+        <FoodPickerGrid v-model="foodIds" :foods="foods" class="mt-3" />
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">

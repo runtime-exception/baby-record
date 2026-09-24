@@ -3,10 +3,10 @@ import { ref, computed, watch } from 'vue';
 import { useAppFeedback } from '@/design-system/feedback';
 import AppSheet from '@/design-system/AppSheet.vue';
 import AppInput from '@/design-system/AppInput.vue';
-import AppSelect from '@/design-system/AppSelect.vue';
 import AppToggle from '@/design-system/AppToggle.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
+import FoodPickerGrid from '@/components/form/FoodPickerGrid.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
 import { feedingApi } from '@/api/feeding';
 import { diaperApi } from '@/api/diaper';
@@ -75,7 +75,6 @@ const entryTitle = computed(() => (props.entry ? titleMap[props.entry.type] : ''
 const feedingIsComplementary = computed(() => feedingType.value === 'COMPLEMENTARY_FOOD');
 const feedingIsMixed = computed(() => feedingType.value === 'MIXED');
 const feedingShowsFoods = computed(() => feedingIsComplementary.value || (feedingIsMixed.value && addFoodToMixed.value));
-const foodOptions = computed(() => foods.value.map((food) => ({ label: food.name, value: food.id })));
 const seniorTimeText = computed(() => {
   if (!props.entry) return '';
   if (props.entry.type === 'sleep') {
@@ -264,7 +263,7 @@ async function onSave() {
               <div><p class="text-base font-semibold text-ios-label mb-3">喂养类型</p><IconPicker v-model="feedingType" :options="feedingTypeOptions" active-color="bg-ios-orange" /></div>
               <div v-if="!feedingIsComplementary"><p class="text-base font-semibold text-ios-label mb-3">奶量</p><WheelPicker v-model="amountMl" :options="Array.from({ length: 31 }, (_, i) => ({ label: `${i * 10} ml`, value: i * 10 }))" /></div>
               <div v-if="feedingIsMixed" class="flex items-center gap-3"><span class="flex-1 text-base font-semibold text-ios-label">添加辅食</span><AppToggle v-model:value="addFoodToMixed" /></div>
-              <div v-if="feedingShowsFoods"><p class="text-base font-semibold text-ios-label mb-2">辅食</p><AppSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" /></div>
+              <div v-if="feedingShowsFoods"><p class="text-base font-semibold text-ios-label mb-2">辅食</p><FoodPickerGrid v-model="feedingFoodIds" :foods="foods" /></div>
             </div>
             <div v-else-if="entry.type === 'diaper'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">纸尿裤类型</p><IconPicker v-model="diaperType" :options="diaperTypeOptions" active-color="bg-ios-blue" /></div>
             <div v-else-if="entry.type === 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">体温</p><WheelPicker v-model="temperature" :options="Array.from({ length: 51 }, (_, i) => ({ label: `${(36 + i / 10).toFixed(1)}℃`, value: 36 + i / 10 }))" /></div>
@@ -326,7 +325,7 @@ async function onSave() {
             </div>
             <div v-if="feedingShowsFoods" class="bg-ios-card rounded-3xl p-4 shadow-card">
               <label class="text-sm font-medium text-ios-secondary">辅食</label>
-              <AppSelect v-model:value="feedingFoodIds" multiple filterable :options="foodOptions" class="mt-2" />
+              <FoodPickerGrid v-model="feedingFoodIds" :foods="foods" class="mt-2" />
             </div>
           </template>
 
