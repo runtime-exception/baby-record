@@ -3,7 +3,7 @@ import { splitFoodEmoji } from '@/design-system/food-emoji';
 
 const props = withDefaults(
   defineProps<{
-    foods: { id: number; name: string }[];
+    foods: { id: number; name: string; emoji?: string | null }[];
     modelValue: number[];
     tone?: 'orange' | 'blue' | 'green';
     emptyHint?: string;
@@ -52,9 +52,9 @@ function toggle(id: number) {
         :aria-pressed="isSelected(food.id)"
         @click="toggle(food.id)"
       >
-        <span class="text-xl">{{ splitFoodEmoji(food.name).emoji }}</span>
+        <span class="text-xl">{{ splitFoodEmoji(food.name, food.emoji).emoji }}</span>
         <span class="min-w-0 flex-1 truncate text-sm font-semibold">
-          {{ splitFoodEmoji(food.name).label }}
+          {{ splitFoodEmoji(food.name, food.emoji).label }}
         </span>
       </button>
     </div>

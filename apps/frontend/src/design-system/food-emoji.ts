@@ -40,6 +40,15 @@ const KEYWORD_EMOJI: Array<[RegExp, string]> = [
 
 const FALLBACK_EMOJI = '🥣';
 
+/** 新增/编辑辅食时可选的图标；顺序按常见程度排列。 */
+export const FOOD_EMOJI_CHOICES = [
+  '🍚', '🌾', '🥣', '🍜', '🥔', '🍠', '🫚', '🥚',
+  '🥓', '🥩', '🍗', '🐟', '🦐', '🍢', '🥛', '🥜',
+  '🌰', '🫘', '🎃', '🥕', '🥦', '🥬', '🌽', '🍅',
+  '🍎', '🍌', '🍐', '🥑', '🥝', '🍇', '🍉', '🍊',
+  '🫐', '🍓', '🥭', '🍑',
+];
+
 const LEADING_EMOJI =
   /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*/u;
 
@@ -50,20 +59,34 @@ export function emojiForFoodName(name: string) {
 }
 
 /**
- * 把名称拆成 emoji 与纯文本两部分，保证列表和卡片里 emoji 与文字对齐。
- * 名称里原本带的 emoji 一律从文字部分剥离，避免重复展示。
+ * 解析一个辅食应展示的图标：用户显式保存的 emoji 优先，
+ * 其次是名称里自带的 emoji，最后按关键词推断并回退到通用餐具。
  */
-export function splitFoodEmoji(name: string) {
+export function resolveFoodEmoji(name: string, emoji?: string | null) {
+  const stored = emoji?.trim();
+  if (stored) return stored;
+
   const trimmed = name.trim();
   const leading = trimmed.match(LEADING_EMOJI);
   const label = leading
     ? trimmed.slice(leading[0].length).trim() || trimmed
     : trimmed;
+
   const keywordEmoji = KEYWORD_EMOJI.find(([pattern]) => pattern.test(label));
-  const emoji = keywordEmoji
-    ? keywordEmoji[1]
-    : leading
-      ? leading[1]
-      : FALLBACK_EMOJI;
-  return { emoji, label };
+  if (keywordEmoji) return keywordEmoji[1];
+  if (leading) return leading[1];
+  return FALLBACK_EMOJI;
+}
+
+/**
+ * 把名称拆成 emoji 与纯文本两部分，保证列表和卡片里 emoji 与文字对齐。
+ * 名称里原本带的 emoji 一律从文字部分剥离，避免重复展示。
+ */
+export function splitFoodEmoji(name: string, emoji?: string | null) {
+  const trimmed = name.trim();
+  const leading = trimmed.match(LEADING_EMOJI);
+  const label = leading
+    ? trimmed.slice(leading[0].length).trim() || trimmed
+    : trimmed;
+  return { emoji: resolveFoodEmoji(trimmed, emoji), label };
 }

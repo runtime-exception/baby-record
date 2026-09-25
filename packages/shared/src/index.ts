@@ -181,6 +181,7 @@ export interface FeedingVo {
 export interface FoodVo {
   id: number;
   name: string;
+  emoji: string | null;
   isActive: boolean;
   createdTime: string;
   updatedTime: string;

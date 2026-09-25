@@ -141,6 +141,7 @@ model Feeding {
 model Food {
   id          Int      @id @default(autoincrement())
   name        String   @unique
+  emoji       String?
   isActive    Boolean  @default(true) @map("is_active")
   createdTime DateTime @default(now()) @map("created_time")
   updatedTime DateTime @updatedAt @map("updated_time")

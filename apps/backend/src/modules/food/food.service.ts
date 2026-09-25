@@ -9,6 +9,7 @@ import { UpdateFoodDto } from './dto/update-food.dto';
 export interface FoodVo {
   id: number;
   name: string;
+  emoji: string | null;
   isActive: boolean;
   createdTime: string;
   updatedTime: string;
@@ -32,7 +33,8 @@ export class FoodService {
     if (!name) throw new BusinessException(ErrorCode.PARAM_INVALID, '辅食名称不能为空');
     const existing = await this.prisma.food.findUnique({ where: { name } });
     if (existing) throw new BusinessException(ErrorCode.PARAM_INVALID, '该辅食已存在');
-    return this.toVo(await this.prisma.food.create({ data: { name } }));
+    const emoji = this.normalizeEmoji(dto.emoji);
+    return this.toVo(await this.prisma.food.create({ data: { name, emoji } }));
   }
 
   async update(id: number, dto: UpdateFoodDto): Promise<FoodVo> {
@@ -45,6 +47,7 @@ export class FoodService {
       where: { id },
       data: {
         ...(name !== undefined && { name }),
+        ...(dto.emoji !== undefined && { emoji: this.normalizeEmoji(dto.emoji) }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
     });
@@ -60,6 +63,12 @@ export class FoodService {
     const food = await this.prisma.food.findUnique({ where: { id } });
     if (!food) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND, '辅食不存在');
     return food;
+  }
+
+  /** 空字符串统一存成 null，表示按名称自动推断图标 */
+  private normalizeEmoji(emoji?: string | null): string | null {
+    const trimmed = emoji?.trim();
+    return trimmed ? trimmed : null;
   }
 
   private toVo(food: Food): FoodVo {
