@@ -152,6 +152,19 @@ model Food {
   @@map("food")
 }
 
+model SupplementConfig {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  emoji         String?
+  defaultAmount String?  @map("default_amount")
+  defaultUnit   String?  @map("default_unit")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdTime   DateTime @default(now()) @map("created_time")
+  updatedTime   DateTime @updatedAt @map("updated_time")
+
+  @@map("supplement_config")
+}
+
 model FeedingFood {
   feedingId Int @map("feeding_id")
   foodId    Int @map("food_id")

@@ -20,6 +20,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { FoodModule } from './modules/food/food.module';
 import { FoodAllergyModule } from './modules/food-allergy/food-allergy.module';
+import { SupplementConfigModule } from './modules/supplement-config/supplement-config.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { FoodAllergyModule } from './modules/food-allergy/food-allergy.module';
     TemperatureModule,
     GrowthModule,
     FoodModule,
+    SupplementConfigModule,
     FoodAllergyModule,
     // 聚合层
     RecordModule,
