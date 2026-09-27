@@ -187,6 +187,17 @@ export interface FoodVo {
   updatedTime: string;
 }
 
+export interface SupplementConfigVo {
+  id: number;
+  name: string;
+  emoji: string | null;
+  defaultAmount: string | null;
+  defaultUnit: string | null;
+  isActive: boolean;
+  createdTime: string;
+  updatedTime: string;
+}
+
 export interface FoodAllergyRecordVo {
   id: number;
   babyId: number;
