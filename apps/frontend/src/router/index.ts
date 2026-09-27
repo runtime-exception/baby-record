@@ -86,6 +86,12 @@ const routes: RouteRecordRaw[] = [
         meta: { tab: 'profile' },
       },
       {
+        path: 'profile/supplements',
+        name: 'profile-supplements',
+        component: () => import('@/views/SupplementManagementView.vue'),
+        meta: { tab: 'profile' },
+      },
+      {
         path: 'baby/new',
         name: 'baby-new',
         component: () => import('@/views/BabyFormView.vue'),

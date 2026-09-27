@@ -150,20 +150,33 @@ async function logout() {
       </div>
     </section>
 
-    <!-- 外观 -->
+    <!-- 记录配置 -->
     <section class="px-5 mt-4">
-      <h2 class="text-sm font-semibold text-ios-secondary mb-2 px-1">辅食</h2>
-      <button
-        class="w-full bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3 active:scale-[0.98] transition-transform"
-        @click="router.push('/profile/foods')"
-      >
-        <span class="text-2xl">🥣</span>
-        <div class="flex-1 text-left">
-          <p class="text-sm font-semibold text-ios-label">辅食管理</p>
-          <p class="text-xs text-ios-secondary mt-0.5">维护喂养与排敏时可选的辅食</p>
-        </div>
-        <span class="text-ios-secondary text-xl">›</span>
-      </button>
+      <h2 class="text-sm font-semibold text-ios-secondary mb-2 px-1">记录配置</h2>
+      <div class="space-y-3">
+        <button
+          class="w-full bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3 active:scale-[0.98] transition-transform"
+          @click="router.push('/profile/foods')"
+        >
+          <span class="text-2xl">🥣</span>
+          <div class="flex-1 text-left">
+            <p class="text-sm font-semibold text-ios-label">辅食管理</p>
+            <p class="text-xs text-ios-secondary mt-0.5">维护喂养与排敏时可选的辅食</p>
+          </div>
+          <span class="text-ios-secondary text-xl">›</span>
+        </button>
+        <button
+          class="w-full bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3 active:scale-[0.98] transition-transform"
+          @click="router.push('/profile/supplements')"
+        >
+          <span class="text-2xl">💊</span>
+          <div class="flex-1 text-left">
+            <p class="text-sm font-semibold text-ios-label">补剂管理</p>
+            <p class="text-xs text-ios-secondary mt-0.5">维护记录时可选的补剂与默认剂量</p>
+          </div>
+          <span class="text-ios-secondary text-xl">›</span>
+        </button>
+      </div>
     </section>
 
     <!-- 外观 -->
