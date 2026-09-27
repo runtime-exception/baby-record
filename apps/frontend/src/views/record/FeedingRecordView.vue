@@ -7,14 +7,26 @@ import AppToggle from '@/design-system/AppToggle.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import FoodPickerGrid from '@/components/form/FoodPickerGrid.vue';
+import SupplementPickerGrid from '@/components/form/SupplementPickerGrid.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
 import { feedingApi } from '@/api/feeding';
 import { foodApi } from '@/api/food';
+import { supplementApi } from '@/api/supplement';
+import { supplementConfigApi } from '@/api/supplement-config';
+import {
+  buildFeedingSupplementPayloads,
+  summarizeSupplementResults,
+} from '@/design-system/feeding-supplements';
 import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
 import { useDashboardStore } from '@/stores/dashboard';
-import { ALL_FEEDING_TYPES, FEEDING_TYPE_LABELS, type FeedingType } from '@baby-record/shared';
+import {
+  ALL_FEEDING_TYPES,
+  FEEDING_TYPE_LABELS,
+  type FeedingType,
+  type SupplementConfigVo,
+} from '@baby-record/shared';
 
 const router = useRouter();
 const message = useAppFeedback();
@@ -30,6 +42,9 @@ const submitting = ref(false);
 const foods = ref<{ id: number; name: string }[]>([]);
 const foodIds = ref<number[]>([]);
 const addFoodToMixed = ref(false);
+const supplements = ref<SupplementConfigVo[]>([]);
+const supplementIds = ref<number[]>([]);
+const addSupplements = ref(false);
 
 const isComplementaryFood = computed(() => feedingType.value === 'COMPLEMENTARY_FOOD');
 const isMixed = computed(() => feedingType.value === 'MIXED');
@@ -42,7 +57,12 @@ const typeOptions = ALL_FEEDING_TYPES.map((v) => ({
 }));
 
 onMounted(async () => {
-  foods.value = await foodApi.list();
+  const [foodConfigs, supplementConfigs] = await Promise.all([
+    foodApi.list(),
+    supplementConfigApi.list(),
+  ]);
+  foods.value = foodConfigs;
+  supplements.value = supplementConfigs;
 });
 
 async function onSubmit() {
@@ -58,16 +78,30 @@ async function onSubmit() {
   }
   submitting.value = true;
   try {
+    const feedingTime = new Date(time.value).toISOString();
     await feedingApi.create({
       babyId: baby.id,
       feedingType: feedingType.value,
-      feedingTime: new Date(time.value).toISOString(),
+      feedingTime,
       ...(!isComplementaryFood.value && { amountMl: amountMl.value }),
       ...(showFoodPicker.value && { foodIds: foodIds.value }),
       remark: remark.value || undefined,
       creatorId: user.id,
     });
-    message.success('喂养记录已保存');
+
+    const supplementPayloads = addSupplements.value
+      ? buildFeedingSupplementPayloads(supplements.value, supplementIds.value, {
+          babyId: baby.id,
+          creatorId: user.id,
+          feedingTime,
+        })
+      : [];
+    const supplementResults = await Promise.allSettled(
+      supplementPayloads.map((payload) => supplementApi.create(payload)),
+    );
+    const summary = summarizeSupplementResults(supplementResults);
+    if (summary.failedCount) message.warning(summary.message);
+    else message.success(summary.message);
     await dashStore.fetch(baby.id);
     router.push('/');
   } catch {
@@ -113,6 +147,22 @@ async function onSubmit() {
           <span v-if="foodIds.length" class="text-xs text-ios-orange">已选 {{ foodIds.length }} 种</span>
         </div>
         <FoodPickerGrid v-model="foodIds" :foods="foods" class="mt-3" />
+      </div>
+
+      <div class="bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-ios-label">补剂添加</p>
+          <p class="text-xs text-ios-secondary mt-0.5">选填，可顺带记录本次补剂</p>
+        </div>
+        <AppToggle v-model:value="addSupplements" aria-label="补剂添加" />
+      </div>
+
+      <div v-if="addSupplements" class="bg-ios-card rounded-3xl p-4 shadow-card">
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium text-ios-secondary">选择补剂</label>
+          <span v-if="supplementIds.length" class="text-xs text-ios-orange">已选 {{ supplementIds.length }} 种</span>
+        </div>
+        <SupplementPickerGrid v-model="supplementIds" :supplements="supplements" class="mt-3" />
       </div>
 
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
