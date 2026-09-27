@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAppFeedback } from '@/design-system/feedback';
 import AppInput from '@/design-system/AppInput.vue';
 import AppHeader from '@/components/AppHeader.vue';
-import TypeSegment from '@/components/form/TypeSegment.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
+import SupplementPickerGrid from '@/components/form/SupplementPickerGrid.vue';
 import { supplementApi } from '@/api/supplement';
+import { supplementConfigApi } from '@/api/supplement-config';
 import { activityApi } from '@/api/activity';
 import { growthApi } from '@/api/growth';
+import { applySupplementDefaults } from '@/design-system/supplement-config';
 import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
 import { useDashboardStore } from '@/stores/dashboard';
+import type { SupplementConfigVo } from '@baby-record/shared';
 
 type Category = 'supplement' | 'allergy' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'height' | 'weight';
 
@@ -40,12 +43,25 @@ const isGrowth = computed(() => category.value === 'height' || category.value ==
 const isHeight = computed(() => category.value === 'height');
 
 // 补剂表单
-const supplementName = ref('维生素D');
-const supplementNameOptions = ['维生素D', 'DHA', '钙', '其他'].map((v) => ({ label: v, value: v }));
-const customName = ref('');
-const amount = ref(1);
-const unit = ref('滴');
+const supplements = ref<SupplementConfigVo[]>([]);
+const selectedSupplementIds = ref<number[]>([]);
+const selectedSupplement = computed(() =>
+  supplements.value.find((item) => item.id === selectedSupplementIds.value[0]) ?? null,
+);
+const amount = ref('');
+const unit = ref('');
 const supplementTime = ref(Date.now());
+
+watch(selectedSupplement, (config) => {
+  if (!config) {
+    amount.value = '';
+    unit.value = '';
+    return;
+  }
+  const defaults = applySupplementDefaults(config);
+  amount.value = defaults.amount ?? '';
+  unit.value = defaults.unit ?? '';
+});
 
 // 活动表单
 const activityTime = ref(Date.now());
@@ -93,6 +109,12 @@ function selectCategory(value: Category) {
 
 // 进入页面时用最近一次测量回填默认值（与体温页一致）
 onMounted(async () => {
+  try {
+    supplements.value = await supplementConfigApi.list();
+  } catch {
+    supplements.value = [];
+  }
+
   const baby = babyStore.currentBaby;
   if (!baby) return;
   try {
@@ -125,17 +147,16 @@ async function onSubmit() {
   submitting.value = true;
   try {
     if (isSupplement.value) {
-      const name = supplementName.value === '其他' ? customName.value.trim() : supplementName.value;
-      if (!name) {
-        message.warning('请输入补剂名称');
+      if (!selectedSupplement.value) {
+        message.warning('请先选择补剂');
         submitting.value = false;
         return;
       }
       await supplementApi.create({
         babyId: baby.id,
-        name,
-        amount: String(amount.value),
-        unit: unit.value || undefined,
+        name: selectedSupplement.value.name,
+        amount: amount.value.trim() || undefined,
+        unit: unit.value.trim() || undefined,
         takeTime: new Date(supplementTime.value).toISOString(),
         creatorId: user.id,
       });
@@ -203,18 +224,17 @@ async function onSubmit() {
       <template v-if="isSupplement">
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">补剂名称</label>
-          <TypeSegment v-model="supplementName" :options="supplementNameOptions" class="mt-2" />
-          <AppInput
-            v-if="supplementName === '其他'"
-            v-model:value="customName"
-            placeholder="请输入补剂名称"
-            class="mt-2"
+          <SupplementPickerGrid
+            v-model="selectedSupplementIds"
+            :supplements="supplements"
+            :multiple="false"
+            class="mt-3"
           />
         </div>
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">剂量</label>
-          <div class="mt-2 grid grid-cols-3 gap-2 items-center">
-            <WheelPicker v-model="amount" :options="Array.from({ length: 11 }, (_, value) => ({ label: String(value), value }))" class="col-span-2" />
+          <div class="mt-2 grid grid-cols-2 gap-2 items-center">
+            <AppInput v-model:value="amount" placeholder="剂量" />
             <AppInput v-model:value="unit" placeholder="单位" />
           </div>
         </div>
@@ -283,8 +303,9 @@ async function onSubmit() {
       </template>
 
       <button
+        data-testid="save-record"
         class="w-full py-3.5 rounded-2xl bg-ios-green text-white font-semibold active:scale-95 transition-transform duration-150 disabled:opacity-60"
-        :disabled="submitting"
+        :disabled="submitting || (isSupplement && !selectedSupplement)"
         @click="onSubmit"
       >
         {{ submitting ? '保存中…' : '保存记录' }}
