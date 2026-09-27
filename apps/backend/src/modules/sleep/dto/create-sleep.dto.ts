@@ -12,9 +12,10 @@ export class CreateSleepDto {
   @IsInt()
   babyId: number;
 
-  @ApiProperty({ enum: SleepType, example: SleepType.NIGHT, description: '睡眠类型' })
+  @ApiPropertyOptional({ enum: SleepType, example: SleepType.NIGHT, description: '睡眠类型（不传时按开始时间自动判断）' })
+  @IsOptional()
   @IsEnum(SleepType)
-  sleepType: SleepType;
+  sleepType?: SleepType;
 
   @ApiProperty({ example: '2026-08-03T22:00:00.000Z', description: '开始时间' })
   @IsDateString()

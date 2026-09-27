@@ -13,7 +13,7 @@ export interface SleepQuery {
 
 export interface CreateSleepPayload {
   babyId: number;
-  sleepType: SleepType;
+  sleepType?: SleepType;
   startTime: string;
   endTime?: string;
   remark?: string;

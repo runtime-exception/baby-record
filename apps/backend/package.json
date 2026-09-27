@@ -8,6 +8,7 @@
     "build": "nest build",
     "test:allergy-score": "ts-node test/allergy-score.test.ts",
     "test:supplement-config": "ts-node test/supplement-config.test.ts",
+    "test:sleep-rules": "ts-node test/sleep-rules.test.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

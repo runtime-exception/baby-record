@@ -10,6 +10,7 @@ import { UpdateSleepDto } from './dto/update-sleep.dto';
 import { StartSleepDto } from './dto/start-sleep.dto';
 import { EndSleepDto } from './dto/end-sleep.dto';
 import { QuerySleepDto } from './dto/query-sleep.dto';
+import { calculateSleepDurationMinutes, resolveSleepType } from './sleep-rules';
 
 export interface SleepVo {
   id: number;
@@ -33,13 +34,11 @@ export class SleepService {
     await this.ensureRefs(dto.babyId, dto.creatorId);
     const startTime = new Date(dto.startTime);
     const endTime = dto.endTime ? new Date(dto.endTime) : null;
-    const durationMinutes = endTime
-      ? Math.max(0, Math.floor((endTime.getTime() - startTime.getTime()) / 60000))
-      : null;
+    const durationMinutes = endTime ? calculateSleepDurationMinutes(startTime, endTime) : null;
     const sleep = await this.prisma.sleep.create({
       data: {
         babyId: dto.babyId,
-        sleepType: dto.sleepType,
+        sleepType: dto.sleepType ?? resolveSleepType(startTime),
         startTime,
         endTime,
         durationMinutes,
@@ -77,7 +76,7 @@ export class SleepService {
     if (sleep.endTime) throw new BusinessException(ErrorCode.SLEEP_ALREADY_ENDED);
 
     const endTime = dto.endTime ? new Date(dto.endTime) : new Date();
-    const durationMinutes = Math.max(0, Math.floor((endTime.getTime() - sleep.startTime.getTime()) / 60000));
+    const durationMinutes = calculateSleepDurationMinutes(sleep.startTime, endTime);
     const updated = await this.prisma.sleep.update({
       where: { id },
       data: {
@@ -90,15 +89,23 @@ export class SleepService {
   }
 
   async update(id: number, dto: UpdateSleepDto): Promise<SleepVo> {
-    await this.findOne(id);
+    const current = await this.prisma.sleep.findUnique({ where: { id } });
+    if (!current) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
     const data: Prisma.SleepUpdateInput = {};
     if (dto.sleepType !== undefined) data.sleepType = dto.sleepType;
     if (dto.startTime !== undefined) data.startTime = new Date(dto.startTime);
     if (dto.remark !== undefined) data.remark = dto.remark;
-    if (dto.endTime !== undefined) {
-      data.endTime = dto.endTime ? new Date(dto.endTime) : null;
-      const start = dto.startTime ? new Date(dto.startTime) : (await this.prisma.sleep.findUnique({ where: { id } })).startTime;
-      data.durationMinutes = dto.endTime ? Math.max(0, Math.floor((data.endTime.getTime() - start.getTime()) / 60000)) : null;
+    if (dto.endTime !== undefined) data.endTime = dto.endTime ? new Date(dto.endTime) : null;
+    if (dto.startTime !== undefined || dto.endTime !== undefined) {
+      const finalStart = dto.startTime ? new Date(dto.startTime) : current.startTime;
+      const finalEnd = dto.endTime === undefined
+        ? current.endTime
+        : dto.endTime
+          ? new Date(dto.endTime)
+          : null;
+      data.durationMinutes = finalEnd
+        ? calculateSleepDurationMinutes(finalStart, finalEnd)
+        : null;
     }
     const sleep = await this.prisma.sleep.update({ where: { id }, data });
     return this.toVo(sleep);
