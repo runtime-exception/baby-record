@@ -13,6 +13,7 @@ import type { SupplementConfigVo } from '@baby-record/shared';
 const message = useAppFeedback();
 const supplements = ref<SupplementConfigVo[]>([]);
 const loading = ref(false);
+const actionSubmitting = ref(false);
 const query = ref('');
 const newName = ref('');
 const newEmoji = ref<string | null>(null);
@@ -44,20 +45,26 @@ async function load() {
 }
 
 async function addSupplement() {
+  if (actionSubmitting.value) return;
   const name = newName.value.trim();
   if (!name) return message.warning('请输入补剂名称');
-  await supplementConfigApi.create({
-    name,
-    emoji: newEmoji.value,
-    defaultAmount: newAmount.value.trim() || null,
-    defaultUnit: newUnit.value.trim() || null,
-  });
-  newName.value = '';
-  newEmoji.value = null;
-  newAmount.value = '';
-  newUnit.value = '';
-  message.success('补剂已添加');
-  await load();
+  actionSubmitting.value = true;
+  try {
+    await supplementConfigApi.create({
+      name,
+      emoji: newEmoji.value,
+      defaultAmount: newAmount.value.trim() || null,
+      defaultUnit: newUnit.value.trim() || null,
+    });
+    newName.value = '';
+    newEmoji.value = null;
+    newAmount.value = '';
+    newUnit.value = '';
+    message.success('补剂已添加');
+    await load();
+  } finally {
+    actionSubmitting.value = false;
+  }
 }
 
 function startEdit(item: SupplementConfigVo) {
@@ -69,23 +76,35 @@ function startEdit(item: SupplementConfigVo) {
 }
 
 async function saveEdit() {
+  if (actionSubmitting.value) return;
   if (!editing.value || !editingName.value.trim()) return;
-  await supplementConfigApi.update(editing.value.id, {
-    name: editingName.value.trim(),
-    emoji: editingEmoji.value,
-    defaultAmount: editingAmount.value.trim() || null,
-    defaultUnit: editingUnit.value.trim() || null,
-  });
-  editing.value = null;
-  message.success('补剂配置已更新');
-  await load();
+  actionSubmitting.value = true;
+  try {
+    await supplementConfigApi.update(editing.value.id, {
+      name: editingName.value.trim(),
+      emoji: editingEmoji.value,
+      defaultAmount: editingAmount.value.trim() || null,
+      defaultUnit: editingUnit.value.trim() || null,
+    });
+    editing.value = null;
+    message.success('补剂配置已更新');
+    await load();
+  } finally {
+    actionSubmitting.value = false;
+  }
 }
 
 async function toggle(item: SupplementConfigVo) {
-  if (item.isActive) await supplementConfigApi.remove(item.id);
-  else await supplementConfigApi.update(item.id, { isActive: true });
-  message.success(item.isActive ? '已停用，历史记录不受影响' : '已恢复');
-  await load();
+  if (actionSubmitting.value) return;
+  actionSubmitting.value = true;
+  try {
+    if (item.isActive) await supplementConfigApi.remove(item.id);
+    else await supplementConfigApi.update(item.id, { isActive: true });
+    message.success(item.isActive ? '已停用，历史记录不受影响' : '已恢复');
+    await load();
+  } finally {
+    actionSubmitting.value = false;
+  }
 }
 
 onMounted(load);
@@ -100,7 +119,7 @@ onMounted(load);
           <label class="text-sm font-medium text-ios-secondary">添加补剂</label>
           <div class="mt-2 flex gap-2">
             <AppInput v-model:value="newName" :maxlength="30" placeholder="如：维生素D" @keyup.enter="addSupplement" />
-            <button class="shrink-0 rounded-2xl bg-ios-blue px-4 text-sm font-semibold text-white" @click="addSupplement">添加</button>
+            <button class="shrink-0 rounded-2xl bg-ios-blue px-4 text-sm font-semibold text-white disabled:opacity-60" :disabled="actionSubmitting" @click="addSupplement">{{ actionSubmitting ? '处理中…' : '添加' }}</button>
           </div>
           <div class="mt-2 grid grid-cols-2 gap-2">
             <AppInput v-model:value="newAmount" :maxlength="30" placeholder="默认剂量" />
@@ -121,8 +140,8 @@ onMounted(load);
                 {{ item.defaultAmount || item.defaultUnit ? `${item.defaultAmount || ''}${item.defaultUnit || ''}` : '未设置默认剂量' }} · {{ item.isActive ? '可用于新记录' : '已停用' }}
               </p>
             </div>
-            <button class="text-xs text-ios-blue" @click="startEdit(item)">编辑</button>
-            <button class="text-xs" :class="item.isActive ? 'text-ios-pink' : 'text-ios-green'" @click="toggle(item)">{{ item.isActive ? '停用' : '恢复' }}</button>
+            <button class="text-xs text-ios-blue disabled:opacity-50" :disabled="actionSubmitting" @click="startEdit(item)">编辑</button>
+            <button class="text-xs disabled:opacity-50" :class="item.isActive ? 'text-ios-pink' : 'text-ios-green'" :disabled="actionSubmitting" @click="toggle(item)">{{ item.isActive ? '停用' : '恢复' }}</button>
           </div>
           <p v-if="!filteredSupplements.length" class="py-10 text-center text-sm text-ios-secondary">没有匹配的补剂</p>
         </section>
@@ -141,7 +160,7 @@ onMounted(load);
             <AppInput v-model:value="editingUnit" :maxlength="10" placeholder="本配置默认单位" />
           </div>
           <SupplementEmojiPicker v-model="editingEmoji" :name="editingName" />
-          <button class="w-full rounded-2xl bg-ios-blue py-3 text-sm font-semibold text-white" @click="saveEdit">保存</button>
+          <button class="w-full rounded-2xl bg-ios-blue py-3 text-sm font-semibold text-white disabled:opacity-60" :disabled="actionSubmitting" @click="saveEdit">{{ actionSubmitting ? '保存中…' : '保存' }}</button>
         </div>
       </AppSheet>
     </div>

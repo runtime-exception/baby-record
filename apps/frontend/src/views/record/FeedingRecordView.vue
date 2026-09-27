@@ -39,6 +39,7 @@ const time = ref(Date.now());
 const amountMl = ref(120);
 const remark = ref('');
 const submitting = ref(false);
+const feedingSaved = ref(false);
 const foods = ref<{ id: number; name: string }[]>([]);
 const foodIds = ref<number[]>([]);
 const addFoodToMixed = ref(false);
@@ -57,15 +58,16 @@ const typeOptions = ALL_FEEDING_TYPES.map((v) => ({
 }));
 
 onMounted(async () => {
-  const [foodConfigs, supplementConfigs] = await Promise.all([
+  const [foodResult, supplementResult] = await Promise.allSettled([
     foodApi.list(),
     supplementConfigApi.list(),
   ]);
-  foods.value = foodConfigs;
-  supplements.value = supplementConfigs;
+  if (foodResult.status === 'fulfilled') foods.value = foodResult.value;
+  if (supplementResult.status === 'fulfilled') supplements.value = supplementResult.value;
 });
 
 async function onSubmit() {
+  if (submitting.value || feedingSaved.value) return;
   const baby = babyStore.currentBaby;
   const user = userStore.currentUser;
   if (!baby || !user) {
@@ -77,8 +79,8 @@ async function onSubmit() {
     return;
   }
   submitting.value = true;
+  const feedingTime = new Date(time.value).toISOString();
   try {
-    const feedingTime = new Date(time.value).toISOString();
     await feedingApi.create({
       babyId: baby.id,
       feedingType: feedingType.value,
@@ -88,24 +90,35 @@ async function onSubmit() {
       remark: remark.value || undefined,
       creatorId: user.id,
     });
-
-    const supplementPayloads = addSupplements.value
-      ? buildFeedingSupplementPayloads(supplements.value, supplementIds.value, {
-          babyId: baby.id,
-          creatorId: user.id,
-          feedingTime,
-        })
-      : [];
-    const supplementResults = await Promise.allSettled(
-      supplementPayloads.map((payload) => supplementApi.create(payload)),
-    );
-    const summary = summarizeSupplementResults(supplementResults);
-    if (summary.failedCount) message.warning(summary.message);
-    else message.success(summary.message);
-    await dashStore.fetch(baby.id);
-    router.push('/');
+    feedingSaved.value = true;
   } catch {
-    // 错误已由 request 拦截器统一提示
+    submitting.value = false;
+    return;
+  }
+
+  const supplementPayloads = addSupplements.value
+    ? buildFeedingSupplementPayloads(supplements.value, supplementIds.value, {
+        babyId: baby.id,
+        creatorId: user.id,
+        feedingTime,
+      })
+    : [];
+  const supplementResults = await Promise.allSettled(
+    supplementPayloads.map((payload) => supplementApi.create(payload)),
+  );
+  const summary = summarizeSupplementResults(supplementResults);
+  if (summary.failedCount) message.warning(summary.message);
+  else message.success(summary.message);
+
+  try {
+    await dashStore.fetch(baby.id);
+  } catch {
+    // 喂养已经保存，首页刷新失败不能允许重新创建记录
+  }
+  try {
+    await router.push('/');
+  } catch {
+    message.warning('记录已保存，请手动返回首页');
   } finally {
     submitting.value = false;
   }
@@ -178,10 +191,10 @@ async function onSubmit() {
 
       <button
         class="w-full py-3.5 rounded-2xl bg-ios-orange text-white font-semibold active:scale-95 transition-transform duration-150 disabled:opacity-60"
-        :disabled="submitting"
+        :disabled="submitting || feedingSaved"
         @click="onSubmit"
       >
-        {{ submitting ? '保存中…' : '保存记录' }}
+        {{ feedingSaved ? '已保存' : submitting ? '保存中…' : '保存记录' }}
       </button>
     </div>
   </div>

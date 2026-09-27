@@ -24,3 +24,11 @@ export function calculateSleepDurationMinutes(startTime: Date, endTime: Date): n
   }
   return Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
 }
+
+export function ensureSleepEndNotInFuture(endTime: Date, now = new Date()): void {
+  ensureValidDate(endTime);
+  ensureValidDate(now);
+  if (endTime.getTime() > now.getTime()) {
+    throw new BusinessException(ErrorCode.PARAM_INVALID, '结束时间不能晚于当前时间');
+  }
+}

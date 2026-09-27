@@ -108,6 +108,7 @@ describe('supplement management', () => {
     const emojiButtons = wrapper.findAll('button[aria-label="图标 💊"]');
     await emojiButtons[emojiButtons.length - 1].trigger('click');
     await buttonByText(wrapper, '保存').trigger('click');
+    await flushPromises();
 
     expect(api.update).toHaveBeenCalledWith(1, {
       name: '维生素D3',
@@ -117,9 +118,11 @@ describe('supplement management', () => {
     });
 
     await buttonByText(wrapper, '停用').trigger('click');
+    await flushPromises();
     expect(api.remove).toHaveBeenCalledWith(1);
 
     await buttonByText(wrapper, '恢复').trigger('click');
+    await flushPromises();
     expect(api.update).toHaveBeenCalledWith(2, { isActive: true });
   });
 });

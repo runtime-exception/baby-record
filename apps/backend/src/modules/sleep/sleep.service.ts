@@ -10,7 +10,11 @@ import { UpdateSleepDto } from './dto/update-sleep.dto';
 import { StartSleepDto } from './dto/start-sleep.dto';
 import { EndSleepDto } from './dto/end-sleep.dto';
 import { QuerySleepDto } from './dto/query-sleep.dto';
-import { calculateSleepDurationMinutes, resolveSleepType } from './sleep-rules';
+import {
+  calculateSleepDurationMinutes,
+  ensureSleepEndNotInFuture,
+  resolveSleepType,
+} from './sleep-rules';
 
 export interface SleepVo {
   id: number;
@@ -34,6 +38,7 @@ export class SleepService {
     await this.ensureRefs(dto.babyId, dto.creatorId);
     const startTime = new Date(dto.startTime);
     const endTime = dto.endTime ? new Date(dto.endTime) : null;
+    if (endTime) ensureSleepEndNotInFuture(endTime);
     const durationMinutes = endTime ? calculateSleepDurationMinutes(startTime, endTime) : null;
     const sleep = await this.prisma.sleep.create({
       data: {
@@ -76,6 +81,7 @@ export class SleepService {
     if (sleep.endTime) throw new BusinessException(ErrorCode.SLEEP_ALREADY_ENDED);
 
     const endTime = dto.endTime ? new Date(dto.endTime) : new Date();
+    ensureSleepEndNotInFuture(endTime);
     const durationMinutes = calculateSleepDurationMinutes(sleep.startTime, endTime);
     const updated = await this.prisma.sleep.update({
       where: { id },
@@ -103,6 +109,7 @@ export class SleepService {
         : dto.endTime
           ? new Date(dto.endTime)
           : null;
+      if (finalEnd) ensureSleepEndNotInFuture(finalEnd);
       data.durationMinutes = finalEnd
         ? calculateSleepDurationMinutes(finalStart, finalEnd)
         : null;

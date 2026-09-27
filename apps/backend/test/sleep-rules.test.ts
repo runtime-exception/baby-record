@@ -3,6 +3,7 @@ import { SleepType } from '@prisma/client';
 import { BusinessException } from '../src/common/exceptions/business.exception';
 import {
   calculateSleepDurationMinutes,
+  ensureSleepEndNotInFuture,
   resolveSleepType,
 } from '../src/modules/sleep/sleep-rules';
 
@@ -26,5 +27,11 @@ for (const endTime of [localTime(10, 0), localTime(9, 59)]) {
     (error) => error instanceof BusinessException && error.getErrorCode() === 40001,
   );
 }
+
+assert.throws(
+  () => ensureSleepEndNotInFuture(localTime(10, 1), localTime(10, 0)),
+  (error) => error instanceof BusinessException && error.getErrorCode() === 40001,
+);
+assert.doesNotThrow(() => ensureSleepEndNotInFuture(localTime(10, 0), localTime(10, 0)));
 
 console.log('sleep rules tests passed');
