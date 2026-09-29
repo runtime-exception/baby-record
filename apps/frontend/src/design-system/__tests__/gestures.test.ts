@@ -3,6 +3,7 @@ import {
   consumeSuppressedClick,
   exceedsLongPressTolerance,
   hasReachedRefreshThreshold,
+  shouldActivatePullRefresh,
   shouldStartPullRefresh,
 } from '../gesture-values';
 
@@ -21,6 +22,13 @@ describe('mobile gestures', () => {
   it('requires the configured refresh distance', () => {
     expect(hasReachedRefreshThreshold(71, 72)).toBe(false);
     expect(hasReachedRefreshThreshold(72, 72)).toBe(true);
+  });
+
+  it('ignores small and mostly horizontal movements before pulling', () => {
+    expect(shouldActivatePullRefresh(0, 0, 12)).toBe(false);
+    expect(shouldActivatePullRefresh(0, 28, 22)).toBe(false);
+    expect(shouldActivatePullRefresh(0, 2, 25)).toBe(true);
+    expect(shouldActivatePullRefresh(1, 2, 25)).toBe(false);
   });
 
   it('consumes one click after a long press and then resets', () => {

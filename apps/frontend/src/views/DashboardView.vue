@@ -181,7 +181,7 @@ const feedingAdvice = computed(() => {
 <template>
   <AppPullToRefresh @refresh="refresh">
   <div>
-  <div v-if="loading && !baby" class="px-5 pt-14 safe-top animate-fade-in">
+  <div v-if="loading && !baby" class="px-5 animate-fade-in" style="padding-top: calc(env(safe-area-inset-top) + 1.5rem)">
     <div class="flex items-center gap-3 mb-5">
       <div class="w-14 h-14 rounded-full bg-ios-fill/60 animate-pulse" />
       <div class="flex-1">
@@ -202,17 +202,17 @@ const feedingAdvice = computed(() => {
 
   <div v-else class="animate-fade-in">
     <!-- 宝宝 Header -->
-    <header class="px-5 pt-14 pb-2 safe-top">
+    <header class="px-5 pb-2" style="padding-top: calc(env(safe-area-inset-top) + 1.5rem)">
       <div class="flex items-center gap-3">
         <div
-          class="w-14 h-14 rounded-full bg-gradient-to-br from-ios-blue to-ios-teal flex items-center justify-center text-3xl shadow-soft"
+          class="w-14 h-14 shrink-0 rounded-full bg-gradient-to-br from-ios-blue to-ios-teal flex items-center justify-center text-3xl shadow-soft"
         >
           <img v-if="baby.avatar" :src="baby.avatar" alt="宝宝头像" class="w-full h-full rounded-full object-cover" />
           <template v-else>👶</template>
         </div>
-        <div>
-          <h1 class="text-2xl font-bold text-ios-label">{{ baby.nickname || baby.name }}</h1>
-          <p class="text-sm text-ios-secondary mt-0.5">
+        <div class="min-w-0">
+          <h1 class="text-2xl leading-tight font-bold text-ios-label break-words">{{ baby.nickname || baby.name }}</h1>
+          <p class="text-sm text-ios-secondary mt-0.5 break-words">
             {{ baby.age.monthAgeText }}<template v-if="growthSummary"> · {{ growthSummary }}</template>
           </p>
         </div>

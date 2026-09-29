@@ -4,6 +4,7 @@ import { Preloader } from 'konsta/vue';
 import { useEventListener } from '@vueuse/core';
 import {
   hasReachedRefreshThreshold,
+  shouldActivatePullRefresh,
   shouldStartPullRefresh,
 } from './gesture-values';
 
@@ -14,7 +15,7 @@ const props = withDefaults(
   }>(),
   {
     disabled: false,
-    threshold: 72,
+    threshold: 84,
   },
 );
 
@@ -25,30 +26,46 @@ const emit = defineEmits<{
 const distance = ref(0);
 const refreshing = ref(false);
 let active = false;
+let tracking = false;
+let startX = 0;
 let startY = 0;
 
 function onTouchStart(event: TouchEvent) {
   if (props.disabled || refreshing.value) return;
   const touch = event.touches[0];
-  active = Boolean(touch) && shouldStartPullRefresh(window.scrollY, 1);
+  tracking = Boolean(touch) && shouldStartPullRefresh(window.scrollY, 1);
+  active = false;
+  distance.value = 0;
+  startX = touch?.clientX ?? 0;
   startY = touch?.clientY ?? 0;
 }
 
 function onTouchMove(event: TouchEvent) {
-  if (!active || refreshing.value) return;
+  if (!tracking || refreshing.value) return;
   const touch = event.touches[0];
   if (!touch) return;
+  const deltaX = touch.clientX - startX;
   const delta = touch.clientY - startY;
+  if (!active) {
+    if (Math.abs(deltaX) > 16 && Math.abs(deltaX) >= delta) {
+      tracking = false;
+      return;
+    }
+    if (!shouldActivatePullRefresh(window.scrollY, deltaX, delta)) return;
+    active = true;
+  }
   if (!shouldStartPullRefresh(window.scrollY, delta)) {
     active = false;
+    tracking = false;
     distance.value = 0;
     return;
   }
-  distance.value = Math.min(120, delta * 0.5);
+  distance.value = Math.min(120, (delta - 16) * 0.45);
   if (distance.value > 0 && event.cancelable) event.preventDefault();
 }
 
 function finishPull() {
+  tracking = false;
   if (!active) return;
   active = false;
   if (hasReachedRefreshThreshold(distance.value, props.threshold)) {
@@ -63,10 +80,16 @@ function finishPull() {
   distance.value = 0;
 }
 
+function cancelPull() {
+  active = false;
+  tracking = false;
+  distance.value = 0;
+}
+
 useEventListener(window, 'touchstart', onTouchStart, { passive: true });
 useEventListener(window, 'touchmove', onTouchMove, { passive: false });
 useEventListener(window, 'touchend', finishPull, { passive: true });
-useEventListener(window, 'touchcancel', finishPull, { passive: true });
+useEventListener(window, 'touchcancel', cancelPull, { passive: true });
 </script>
 
 <template>

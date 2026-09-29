@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { Toast } from 'konsta/vue';
 import {
   subscribeFeedback,
   type FeedbackMessage,
@@ -48,15 +47,28 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Toast :opened="Boolean(current)" position="center">
+  <Transition name="feedback-top">
     <div
       v-if="current"
-      class="rounded-2xl px-4 py-3 text-sm font-semibold shadow-soft"
-      :class="typeClasses[current.type]"
-      role="status"
-      aria-live="polite"
+      data-feedback-toast
+      class="pointer-events-none fixed left-4 right-4 z-50 flex justify-center"
+      style="top: calc(env(safe-area-inset-top) + 1rem); bottom: auto"
     >
-      {{ current.message }}
+      <div
+        class="max-w-app rounded-2xl px-4 py-3 text-sm font-semibold shadow-soft"
+        :class="typeClasses[current.type]"
+        role="status"
+        aria-live="polite"
+      >
+        {{ current.message }}
+      </div>
     </div>
-  </Toast>
+  </Transition>
 </template>
+
+<style scoped>
+.feedback-top-enter-active,
+.feedback-top-leave-active { transition: transform 0.2s ease, opacity 0.2s ease; }
+.feedback-top-enter-from,
+.feedback-top-leave-to { transform: translateY(-12px); opacity: 0; }
+</style>

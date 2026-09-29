@@ -19,6 +19,10 @@ describe('design system feedback and dialog hosts', () => {
     await nextTick();
 
     expect(wrapper.text()).toContain('已保存');
+    const toast = wrapper.find('[data-feedback-toast]');
+    expect(toast.exists()).toBe(true);
+    expect((toast.element as HTMLElement).style.top).toBe('calc(env(safe-area-inset-top) + 1rem)');
+    expect((toast.element as HTMLElement).style.bottom).toBe('auto');
   });
 
   it('resolves confirmed dialogs with true', async () => {

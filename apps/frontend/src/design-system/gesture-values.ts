@@ -12,6 +12,10 @@ export function shouldStartPullRefresh(scrollTop: number, deltaY: number) {
   return scrollTop <= 0 && deltaY > 0;
 }
 
+export function shouldActivatePullRefresh(scrollTop: number, deltaX: number, deltaY: number) {
+  return scrollTop <= 0 && deltaY > 16 && deltaY > Math.abs(deltaX) * 1.25;
+}
+
 export function hasReachedRefreshThreshold(distance: number, threshold: number) {
   return distance >= threshold;
 }
