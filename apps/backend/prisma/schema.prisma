@@ -122,6 +122,7 @@ model Feeding {
   babyId          Int         @map("baby_id")
   feedingTime     DateTime    @map("feeding_time")
   feedingType     FeedingType @map("feeding_type")
+  components      FeedingType[] @default([])
   amountMl        Int?        @map("amount_ml")
   durationMinutes Int?        @map("duration_minutes")
   remark          String?

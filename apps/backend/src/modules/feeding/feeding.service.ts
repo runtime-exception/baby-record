@@ -8,12 +8,14 @@ import { PaginatedResult } from '../../common/dto/pagination.dto';
 import { CreateFeedingDto } from './dto/create-feeding.dto';
 import { UpdateFeedingDto } from './dto/update-feeding.dto';
 import { QueryFeedingDto } from './dto/query-feeding.dto';
+import { resolveFeedingComponents } from './feeding-composition';
 
 export interface FeedingVo {
   id: number;
   babyId: number;
   feedingTime: string;
   feedingType: string;
+  components: FeedingType[];
   amountMl: number | null;
   durationMinutes: number | null;
   remark: string | null;
@@ -39,10 +41,12 @@ export class FeedingService {
   async create(dto: CreateFeedingDto): Promise<FeedingVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
     const foodIds = await this.validateFoods(dto.feedingType, dto.foodIds ?? []);
+    const components = resolveFeedingComponents(dto.feedingType, dto.components, foodIds);
     const feeding = await this.prisma.feeding.create({
       data: {
         babyId: dto.babyId,
         feedingType: dto.feedingType,
+        components,
         feedingTime: new Date(dto.feedingTime),
         amountMl: dto.feedingType === FeedingType.COMPLEMENTARY_FOOD ? null : dto.amountMl,
         durationMinutes: dto.durationMinutes,
@@ -64,10 +68,16 @@ export class FeedingService {
       requestedFoodIds,
       existing.foods.map((item) => item.foodId),
     );
+    const components = resolveFeedingComponents(
+      feedingType,
+      dto.components ?? (dto.feedingType === undefined && dto.foodIds === undefined ? existing.components : undefined),
+      foodIds,
+    );
     const feeding = await this.prisma.feeding.update({
       where: { id },
       data: {
         ...(dto.feedingType !== undefined && { feedingType: dto.feedingType }),
+        components,
         ...(dto.feedingTime !== undefined && { feedingTime: new Date(dto.feedingTime) }),
         ...(feedingType === FeedingType.COMPLEMENTARY_FOOD
           ? { amountMl: null }
@@ -178,6 +188,7 @@ export class FeedingService {
       babyId: f.babyId,
       feedingTime: f.feedingTime.toISOString(),
       feedingType: f.feedingType,
+      components: f.components,
       amountMl: f.amountMl,
       durationMinutes: f.durationMinutes,
       remark: f.remark,

@@ -35,11 +35,6 @@ const ToggleStub = defineComponent({
   template: '<button aria-label="补剂添加" @click="$emit(\'update:value\', !value)">toggle</button>',
 });
 
-const IconPickerStub = defineComponent({
-  emits: ['update:modelValue'],
-  template: '<button data-testid="choose-food" @click="$emit(\'update:modelValue\', \'COMPLEMENTARY_FOOD\')">food</button>',
-});
-
 function mountView() {
   return mount(FeedingRecordView, {
     global: {
@@ -48,7 +43,6 @@ function mountView() {
         AppInput: true,
         AppToggle: ToggleStub,
         DateTimePicker: true,
-        IconPicker: IconPickerStub,
         WheelPicker: true,
       },
     },
@@ -83,7 +77,7 @@ describe('feeding record orchestration', () => {
     await flushPromises();
 
     await wrapper.get('button[aria-label="补剂添加"]').trigger('click');
-    await wrapper.get('button[aria-pressed="false"]').trigger('click');
+    await wrapper.getComponent({ name: 'SupplementPickerGrid' }).get('button[aria-pressed="false"]').trigger('click');
     const save = wrapper.findAll('button').find((button) => button.text() === '保存记录');
     if (!save) throw new Error('save button missing');
     await save.trigger('click');
@@ -102,9 +96,24 @@ describe('feeding record orchestration', () => {
     const wrapper = mountView();
     await flushPromises();
 
-    await wrapper.get('[data-testid="choose-food"]').trigger('click');
+    await wrapper.get('[data-feeding-component="COMPLEMENTARY_FOOD"]').trigger('click');
     await flushPromises();
     const picker = wrapper.getComponent({ name: 'FoodPickerGrid' });
     expect(picker.props('foods')).toEqual([{ id: 3, name: '米糊' }]);
+  });
+
+  it('saves breast milk with food as a mixed record with both components', async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.get('[data-feeding-component="COMPLEMENTARY_FOOD"]').trigger('click');
+    wrapper.getComponent({ name: 'FoodPickerGrid' }).vm.$emit('update:modelValue', [3]);
+    await wrapper.findAll('button').find((button) => button.text() === '保存记录')!.trigger('click');
+    await flushPromises();
+
+    expect(mocks.createFeeding).toHaveBeenCalledWith(expect.objectContaining({
+      feedingType: 'MIXED',
+      components: ['BREAST_MILK', 'COMPLEMENTARY_FOOD'],
+      foodIds: [3],
+    }));
   });
 });

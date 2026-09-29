@@ -31,6 +31,7 @@ import {
   type DailyRecords,
 } from '@baby-record/shared';
 import type { TimelineEntry } from '@/types/timeline';
+import { componentsForFeeding } from '@/design-system/feeding-composition';
 
 withDefaults(defineProps<{
   title?: string;
@@ -73,7 +74,7 @@ function buildItems(d: DailyRecords): TimelineEntry[] {
       icon: '🍼',
       title: '喂养',
       detail:
-        FEEDING_TYPE_LABELS[f.feedingType] +
+        componentsForFeeding(f).map((item) => FEEDING_TYPE_LABELS[item]).join('＋') +
         (f.amountMl ? ` · ${f.amountMl}ml` : '') +
         (f.foods.length ? ` · ${f.foods.map((food) => food.name).join('、')}` : '') +
         (f.remark ? ` · ${f.remark}` : ''),

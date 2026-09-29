@@ -7,7 +7,7 @@ const items = [
   {
     icon: '🍚',
     label: '喂养',
-    desc: '母乳 / 奶粉 / 混合',
+    desc: '母乳 / 奶粉 / 辅食',
     color: 'from-ios-orange/20 to-ios-orange/5',
     to: '/record/feeding',
   },

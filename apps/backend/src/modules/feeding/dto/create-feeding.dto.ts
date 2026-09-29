@@ -13,6 +13,13 @@ export class CreateFeedingDto {
   @IsEnum(FeedingType)
   feedingType: FeedingType;
 
+  @ApiPropertyOptional({ enum: FeedingType, isArray: true, description: '实际选择的喂养组成；旧客户端可省略' })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsEnum(FeedingType, { each: true })
+  components?: FeedingType[];
+
   @ApiProperty({ example: '2026-08-03T10:30:00.000Z', description: '喂养时间' })
   @IsDateString()
   feedingTime: string;

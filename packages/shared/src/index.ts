@@ -7,6 +7,7 @@
 export type Gender = 'MALE' | 'FEMALE';
 export type UserRole = 'DAD' | 'MOM' | 'GRANDPA_P' | 'GRANDMA_P' | 'GRANDMA_M' | 'GRANDPA_M';
 export type FeedingType = 'BREAST_MILK' | 'FORMULA' | 'COMPLEMENTARY_FOOD' | 'MIXED';
+export type FeedingComponent = Exclude<FeedingType, 'MIXED'>;
 export type DiaperType = 'PEE' | 'POOP' | 'BOTH';
 export type SleepType = 'DAYTIME' | 'NIGHT';
 export type AllergyConclusion = 'NOT_ALLERGIC' | 'POSSIBLE' | 'ALLERGIC';
@@ -168,6 +169,7 @@ export interface FeedingVo {
   babyId: number;
   feedingTime: string;
   feedingType: FeedingType;
+  components: FeedingComponent[];
   amountMl: number | null;
   durationMinutes: number | null;
   remark: string | null;
