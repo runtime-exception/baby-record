@@ -46,7 +46,7 @@ describe('exercise recording', () => {
     const w = mount(ActivityRecordView, { global: { stubs } }); await flushPromises();
     await w.findAll('button').find(b => b.text().includes('运动'))!.trigger('click'); await flushPromises();
     await w.get('[data-exercise="翻身"]').trigger('click'); await w.get('[data-exercise="抬头"]').trigger('click');
-    await w.get('input[placeholder="数量"]').setValue('3');
+    await w.get('input[placeholder="运动时长"]').setValue('3');
     await w.get('[data-testid="save-record"]').trigger('click'); await flushPromises();
     expect(mocks.create).toHaveBeenCalledTimes(1);
     expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ eventType: '运动', exerciseTypes: ['翻身', '抬头'], amount: '3', unit: '分钟', babyId: 7, creatorId: 9 }));
@@ -57,8 +57,8 @@ it('edits an existing exercise record without resetting its quantity', async () 
   const entry = { type: 'activity', time: '2026-10-01T08:00:00Z', icon: '🤸', title: '运动', detail: '', colorClass: '', raw: { id: 4, babyId: 7, eventType: '运动', exerciseTypes: ['翻身', '抬头'], amount: '7', unit: '分钟', eventTime: '2026-10-01T08:00:00Z', creatorId: 9, createdTime: '2026-10-01T08:00:00Z', description: null, remark: null } } as TimelineEntry;
   const w = mount(EditRecordModal, { props: { entry }, global: { stubs: { ...stubs, AppSheet: { template: '<div><slot /></div>' } } } });
   await flushPromises();
-  expect((w.get('input[placeholder="数量"]').element as HTMLInputElement).value).toBe('7');
-  await w.get('input[placeholder="数量"]').setValue('8');
+  expect((w.get('input[placeholder="运动时长"]').element as HTMLInputElement).value).toBe('7');
+  await w.get('input[placeholder="运动时长"]').setValue('8');
   await w.findAll('button').find(b => b.text() === '保存修改')!.trigger('click'); await flushPromises();
   expect(mocks.update).toHaveBeenCalledWith(4, expect.objectContaining({ exerciseTypes: ['翻身', '抬头'], amount: '8', unit: '分钟' }));
 });

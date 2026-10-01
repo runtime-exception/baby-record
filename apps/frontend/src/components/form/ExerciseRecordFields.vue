@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import AppInput from '@/design-system/AppInput.vue';
 import { exerciseConfigApi } from '@/api/exercise-config';
 import { exerciseDefaults, type ExerciseConfigVo, type ExerciseUnit } from '@baby-record/shared';
 const props = defineProps<{ exerciseTypes: string[]; amount: string | null; unit: ExerciseUnit | null }>();
@@ -65,11 +64,15 @@ onMounted(load);
       <p v-if="!loading && !failed && !options.length" class="py-4 text-sm text-ios-secondary">请先到「我的 → 记录配置 → 运动管理」添加运动类型</p>
     </section>
     <section class="bg-ios-card rounded-3xl p-4 shadow-card">
-      <p class="text-sm font-medium text-ios-secondary">数量</p>
-      <div class="mt-2 flex items-center gap-3">
-        <AppInput :value="amount ?? ''" placeholder="数量" type="number" min="0" step="any" @update:value="changeAmount" />
-        <span data-testid="exercise-unit" class="shrink-0 text-sm text-ios-label">{{ unit || '未填写' }}</span>
-      </div>
+      <label class="block">
+        <span class="text-base font-semibold text-ios-label">运动时长</span>
+        <span class="mt-3 flex w-fit max-w-full items-center gap-2 rounded-2xl bg-ios-fill/40 px-4 py-3 focus-within:ring-2 focus-within:ring-ios-green">
+          <input :value="amount ?? ''" placeholder="运动时长" type="number" min="0" step="any" inputmode="decimal"
+            class="w-24 min-w-0 bg-transparent text-center text-2xl font-semibold text-ios-label outline-none placeholder:text-base placeholder:font-normal placeholder:text-ios-secondary"
+            @input="changeAmount(($event.target as HTMLInputElement).value)" />
+          <span data-testid="exercise-unit" class="shrink-0 text-base font-medium text-ios-label">{{ unit || '未填写' }}</span>
+        </span>
+      </label>
       <p class="mt-2 text-xs text-ios-secondary">多选运动共用数量和单位，时间单位优先</p>
     </section>
   </div>
