@@ -5,6 +5,8 @@ import AppSheet from '@/design-system/AppSheet.vue';
 import AppInput from '@/design-system/AppInput.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
+import ExerciseRecordFields from '@/components/form/ExerciseRecordFields.vue';
+import type { ExerciseUnit } from '@baby-record/shared';
 import FoodPickerGrid from '@/components/form/FoodPickerGrid.vue';
 import FeedingComponentPicker from '@/components/form/FeedingComponentPicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
@@ -42,6 +44,9 @@ const supplementName = ref('');
 const amount = ref('');
 const unit = ref('');
 const eventType = ref('');
+const exerciseTypes = ref<string[]>([]);
+const exerciseAmount = ref<string | null>(null);
+const exerciseUnit = ref<ExerciseUnit | null>(null);
 const description = ref('');
 const temperature = ref(36.5);
 const submitting = ref(false);
@@ -64,7 +69,7 @@ const titleMap: Record<TimelineEntry['type'], string> = {
   temperature: '体温',
   foodAllergy: '辅食排敏',
 };
-const entryTitle = computed(() => (props.entry ? titleMap[props.entry.type] : ''));
+const entryTitle = computed(() => (props.entry?.type === 'activity' && eventType.value === '运动' ? '运动' : props.entry ? titleMap[props.entry.type] : ''));
 const feedingType = computed(() => feedingTypeForComponents(feedingComponents.value));
 const feedingHasFood = computed(() => feedingComponents.value.includes('COMPLEMENTARY_FOOD'));
 const feedingHasMilk = computed(() => feedingComponents.value.some((item) => item !== 'COMPLEMENTARY_FOOD'));
@@ -85,7 +90,7 @@ const seniorDetailText = computed(() => {
   if (props.entry.type === 'diaper') return DIAPER_TYPE_LABELS[diaperType.value];
   if (props.entry.type === 'temperature') return `${temperature.value.toFixed(1)}℃`;
   if (props.entry.type === 'supplement') return `${supplementName.value || '未填写名称'}${amount.value ? ` · ${amount.value}${unit.value}` : ''}`;
-  if (props.entry.type === 'activity') return eventType.value || '未填写事件类型';
+  if (props.entry.type === 'activity') return eventType.value === '运动' ? [exerciseTypes.value.join('、'), exerciseAmount.value ? `${exerciseAmount.value}${exerciseUnit.value || ''}` : ''].filter(Boolean).join(' · ') : eventType.value || '未填写事件类型';
   return '查看并修改睡眠时间';
 });
 
@@ -127,6 +132,9 @@ watch(
     } else if (e.type === 'activity') {
       time.value = new Date(r.eventTime as string).getTime();
       eventType.value = r.eventType as string;
+      exerciseTypes.value = [...((r.exerciseTypes as string[]) ?? [])];
+      exerciseAmount.value = (r.amount as string | null) ?? null;
+      exerciseUnit.value = (r.unit as ExerciseUnit | null) ?? null;
       description.value = (r.description as string) || '';
       remark.value = (r.remark as string) || '';
     } else if (e.type === 'temperature') {
@@ -195,6 +203,7 @@ async function onSave() {
     } else if (e.type === 'activity') {
       await activityApi.update(r.id, {
         eventType: eventType.value,
+        ...(eventType.value === '运动' && { exerciseTypes: exerciseTypes.value, amount: exerciseAmount.value, unit: exerciseUnit.value }),
         eventTime: iso(time.value),
         description: description.value || undefined,
         remark: remark.value || undefined,
@@ -264,7 +273,11 @@ async function onSave() {
             <div v-else-if="entry.type === 'diaper'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">纸尿裤类型</p><IconPicker v-model="diaperType" :options="diaperTypeOptions" active-color="bg-ios-blue" /></div>
             <div v-else-if="entry.type === 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-3">体温</p><WheelPicker v-model="temperature" :options="Array.from({ length: 51 }, (_, i) => ({ label: `${(36 + i / 10).toFixed(1)}℃`, value: 36 + i / 10 }))" /></div>
             <div v-else-if="entry.type === 'supplement'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-4"><div><p class="text-base font-semibold text-ios-label mb-2">名称</p><AppInput v-model:value="supplementName" /></div><div><p class="text-base font-semibold text-ios-label mb-2">剂量</p><AppInput v-model:value="amount" /></div></div>
-            <div v-else-if="entry.type === 'activity'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">事件类型</p><AppInput v-model:value="eventType" /></div>
+            <div v-else-if="entry.type === 'activity'">
+              <ExerciseRecordFields v-if="eventType === '运动'" v-model:exercise-types="exerciseTypes" v-model:amount="exerciseAmount" v-model:unit="exerciseUnit" />
+              <div v-else class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">事件类型</p><AppInput v-model:value="eventType" /></div>
+              <div class="bg-ios-card rounded-3xl p-5 shadow-card mt-3"><p class="text-base font-semibold text-ios-label mb-2">描述</p><AppInput v-model:value="description" textarea :rows="2" /></div>
+            </div>
             <div v-else class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-lg font-semibold text-ios-label">睡眠记录</p><p class="text-base text-ios-secondary mt-2">可在“修改时间”中调整开始和结束时间。</p></div>
             <div v-if="entry.type !== 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">备注（选填）</p><AppInput v-model:value="remark" textarea :rows="3" /></div>
           </div>
@@ -343,7 +356,8 @@ async function onSave() {
           </template>
 
           <template v-if="entry.type === 'activity'">
-            <div class="bg-ios-card rounded-3xl p-4 shadow-card">
+            <ExerciseRecordFields v-if="eventType === '运动'" v-model:exercise-types="exerciseTypes" v-model:amount="exerciseAmount" v-model:unit="exerciseUnit" />
+            <div v-else class="bg-ios-card rounded-3xl p-4 shadow-card">
               <label class="text-sm font-medium text-ios-secondary">事件类型</label>
               <AppInput v-model:value="eventType" class="mt-2" />
             </div>

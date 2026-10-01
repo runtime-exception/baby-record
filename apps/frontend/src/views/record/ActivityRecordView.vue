@@ -6,6 +6,8 @@ import AppInput from '@/design-system/AppInput.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import WheelPicker from '@/components/form/WheelPicker.vue';
+import ExerciseRecordFields from '@/components/form/ExerciseRecordFields.vue';
+import type { ExerciseUnit } from '@baby-record/shared';
 import SupplementPickerGrid from '@/components/form/SupplementPickerGrid.vue';
 import { supplementApi } from '@/api/supplement';
 import { supplementConfigApi } from '@/api/supplement-config';
@@ -17,7 +19,7 @@ import { useUserStore } from '@/stores/user';
 import { useDashboardStore } from '@/stores/dashboard';
 import type { SupplementConfigVo } from '@baby-record/shared';
 
-type Category = 'supplement' | 'allergy' | 'play' | 'headup' | 'turn' | 'bath' | 'other' | 'height' | 'weight';
+type Category = 'supplement' | 'allergy' | 'exercise' | 'bath' | 'other' | 'height' | 'weight';
 
 const router = useRouter();
 const message = useAppFeedback();
@@ -29,9 +31,7 @@ const category = ref<Category>('supplement');
 const categoryOptions: { label: string; value: Category; icon: string }[] = [
   { label: '补剂', value: 'supplement', icon: '💊' },
   { label: '辅食排敏', value: 'allergy', icon: '🔎' },
-  { label: '玩耍', value: 'play', icon: '🎮' },
-  { label: '抬头', value: 'headup', icon: '👶' },
-  { label: '翻身', value: 'turn', icon: '🔄' },
+  { label: '运动', value: 'exercise', icon: '🤸' },
   { label: '洗澡', value: 'bath', icon: '🛁' },
   { label: '其他', value: 'other', icon: '✨' },
   { label: '身高', value: 'height', icon: '📏' },
@@ -39,6 +39,10 @@ const categoryOptions: { label: string; value: Category; icon: string }[] = [
 ];
 
 const isSupplement = computed(() => category.value === 'supplement');
+const isExercise = computed(() => category.value === 'exercise');
+const exerciseTypes = ref<string[]>([]);
+const exerciseAmount = ref<string | null>(null);
+const exerciseUnit = ref<ExerciseUnit | null>(null);
 const isGrowth = computed(() => category.value === 'height' || category.value === 'weight');
 const isHeight = computed(() => category.value === 'height');
 
@@ -93,9 +97,7 @@ const prefilled = ref(false);
 const growthTouched = ref(false);
 
 const activityEventLabel: Record<Exclude<Category, 'supplement' | 'allergy' | 'height' | 'weight'>, string> = {
-  play: '玩耍',
-  headup: '抬头',
-  turn: '翻身',
+  exercise: '运动',
   bath: '洗澡',
   other: '其他',
 };
@@ -144,6 +146,7 @@ async function onSubmit() {
     message.error('请先选择宝宝与身份');
     return;
   }
+  if (submitting.value) return;
   submitting.value = true;
   try {
     if (isSupplement.value) {
@@ -179,6 +182,7 @@ async function onSubmit() {
       await activityApi.create({
         babyId: baby.id,
         eventType: activityEventLabel[category.value as Exclude<Category, 'supplement' | 'allergy' | 'height' | 'weight'>],
+        ...(isExercise.value && { exerciseTypes: exerciseTypes.value, amount: exerciseAmount.value, unit: exerciseUnit.value }),
         eventTime: new Date(activityTime.value).toISOString(),
         description: description.value || undefined,
         creatorId: user.id,
@@ -286,6 +290,7 @@ async function onSubmit() {
 
       <!-- 活动表单 -->
       <template v-else>
+        <ExerciseRecordFields v-if="isExercise" v-model:exercise-types="exerciseTypes" v-model:amount="exerciseAmount" v-model:unit="exerciseUnit" />
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">时间</label>
           <DateTimePicker v-model="activityTime" class="mt-2 w-full" />
@@ -305,7 +310,7 @@ async function onSubmit() {
       <button
         data-testid="save-record"
         class="w-full py-3.5 rounded-2xl bg-ios-green text-white font-semibold active:scale-95 transition-transform duration-150 disabled:opacity-60"
-        :disabled="submitting || (isSupplement && !selectedSupplement)"
+        :disabled="submitting || (isSupplement && !selectedSupplement) || (isExercise && (!exerciseTypes.length || !exerciseAmount))"
         @click="onSubmit"
       >
         {{ submitting ? '保存中…' : '保存记录' }}

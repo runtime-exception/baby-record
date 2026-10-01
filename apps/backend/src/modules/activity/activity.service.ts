@@ -1,3 +1,4 @@
+import { preferredExercise, validateExerciseAmount } from './exercise-rules';
 import { Injectable } from '@nestjs/common';
 import { Activity, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -13,6 +14,9 @@ export interface ActivityVo {
   id: number;
   babyId: number;
   eventType: string;
+  exerciseTypes: string[];
+  amount: string | null;
+  unit: string | null;
   eventTime: string;
   description: string | null;
   remark: string | null;
@@ -26,8 +30,10 @@ export class ActivityService {
 
   async create(dto: CreateActivityDto): Promise<ActivityVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
+    const exercise = await this.exerciseData(dto);
     const activity = await this.prisma.activity.create({
       data: {
+        ...exercise,
         babyId: dto.babyId,
         eventType: dto.eventType,
         eventTime: new Date(dto.eventTime),
@@ -40,10 +46,12 @@ export class ActivityService {
   }
 
   async update(id: number, dto: UpdateActivityDto): Promise<ActivityVo> {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
+    const exercise = await this.exerciseData(dto, existing);
     const activity = await this.prisma.activity.update({
       where: { id },
       data: {
+        ...exercise,
         ...(dto.eventType !== undefined && { eventType: dto.eventType }),
         ...(dto.eventTime !== undefined && { eventTime: new Date(dto.eventTime) }),
         ...(dto.description !== undefined && { description: dto.description }),
@@ -85,6 +93,38 @@ export class ActivityService {
     });
   }
 
+  private async exerciseData(dto: UpdateActivityDto, existing?: ActivityVo) {
+    if ((dto.eventType ?? existing?.eventType) !== '运动') {
+      return { exerciseTypes: [], amount: null, unit: null };
+    }
+    const names = dto.exerciseTypes ?? existing?.exerciseTypes ?? [];
+    if (!names.length || names.some((name) => !name.trim()) || new Set(names).size !== names.length) {
+      throw new BusinessException(ErrorCode.PARAM_INVALID, '请至少选择一种运动，不能重复');
+    }
+    const configs = await this.prisma.exerciseConfig.findMany({ where: { name: { in: names } } });
+    const selected = names.map((name) => {
+      const config = configs.find((item) => item.name === name);
+      if (config?.isActive) return config;
+      if (existing?.exerciseTypes.includes(name)) {
+        return { defaultUnit: existing.unit ?? config?.defaultUnit ?? '分钟' };
+      }
+      throw new BusinessException(ErrorCode.PARAM_INVALID, `运动“${name}”不存在或已停用`);
+    });
+    const unchanged = existing && JSON.stringify(names) === JSON.stringify(existing.exerciseTypes);
+    const preferredUnit = preferredExercise(selected).defaultUnit;
+    const unit = unchanged && existing.unit && (dto.unit == null || dto.unit === existing.unit) ? existing.unit : preferredUnit;
+    const amount = dto.amount !== undefined ? dto.amount : existing?.amount;
+    // 迁移后的旧记录没有数量，允许继续只修改时间和描述。
+    if (unchanged && existing.amount === null && amount == null) {
+      return { exerciseTypes: names, amount: null, unit: null };
+    }
+    validateExerciseAmount(amount, unit);
+    if (dto.unit != null && dto.unit !== unit) {
+      throw new BusinessException(ErrorCode.PARAM_INVALID, '运动单位与所选运动不一致，时间单位优先');
+    }
+    return { exerciseTypes: names, amount: amount.trim(), unit };
+  }
+
   private buildWhere(query: QueryActivityDto): Prisma.ActivityWhereInput {
     const where: Prisma.ActivityWhereInput = { babyId: query.babyId };
     if (query.eventType) where.eventType = { contains: query.eventType };
@@ -107,6 +147,9 @@ export class ActivityService {
       id: a.id,
       babyId: a.babyId,
       eventType: a.eventType,
+      exerciseTypes: a.exerciseTypes,
+      amount: a.amount,
+      unit: a.unit,
       eventTime: a.eventTime.toISOString(),
       description: a.description,
       remark: a.remark,

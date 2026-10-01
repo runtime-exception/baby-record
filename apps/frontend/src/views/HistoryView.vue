@@ -124,7 +124,7 @@ function buildItems(d: DailyRecords): TimelineEntry[] {
       time: a.eventTime,
       icon: '✨',
       title: a.eventType,
-      detail: a.description || '',
+      detail: [a.exerciseTypes?.join('、'), a.amount ? `${a.amount}${a.unit || ''}` : '', a.description].filter(Boolean).join(' · '),
       colorClass: 'bg-ios-teal',
     }),
   );

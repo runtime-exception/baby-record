@@ -20,7 +20,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node -r dotenv/config -r tsconfig-paths/register src/prisma/seed.ts",
-    "docker:build": "docker build -t baby-record ."
+    "docker:build": "docker build -t baby-record .",
+    "test:exercise-record": "ts-node test/exercise-record.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

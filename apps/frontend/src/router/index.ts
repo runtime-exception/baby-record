@@ -86,6 +86,12 @@ const routes: RouteRecordRaw[] = [
         meta: { tab: 'profile' },
       },
       {
+        path: 'profile/exercises',
+        name: 'profile-exercises',
+        component: () => import('@/views/ExerciseManagementView.vue'),
+        meta: { tab: 'profile' },
+      },
+      {
         path: 'profile/supplements',
         name: 'profile-supplements',
         component: () => import('@/views/SupplementManagementView.vue'),

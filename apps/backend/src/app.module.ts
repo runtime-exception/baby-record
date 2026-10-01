@@ -20,6 +20,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { FoodModule } from './modules/food/food.module';
 import { FoodAllergyModule } from './modules/food-allergy/food-allergy.module';
+import { ExerciseConfigModule } from './modules/exercise-config/exercise-config.module';
 import { SupplementConfigModule } from './modules/supplement-config/supplement-config.module';
 
 @Module({
@@ -45,6 +46,7 @@ import { SupplementConfigModule } from './modules/supplement-config/supplement-c
     GrowthModule,
     FoodModule,
     SupplementConfigModule,
+    ExerciseConfigModule,
     FoodAllergyModule,
     // 聚合层
     RecordModule,

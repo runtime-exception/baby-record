@@ -200,6 +200,25 @@ export interface SupplementConfigVo {
   updatedTime: string;
 }
 
+export interface ExerciseConfigVo {
+  id: number;
+  name: string;
+  emoji: string | null;
+  defaultAmount: string;
+  defaultUnit: ExerciseUnit;
+  isActive: boolean;
+  createdTime: string;
+  updatedTime: string;
+}
+
+export const EXERCISE_UNITS = ['分钟', '秒', '次'] as const;
+export type ExerciseUnit = typeof EXERCISE_UNITS[number];
+
+/** 输入顺序为选择顺序；时间单位优先，否则采用首项。 */
+export function exerciseDefaults<T extends { defaultAmount: string; defaultUnit: ExerciseUnit }>(items: T[]) {
+  return items.find((item) => item.defaultUnit !== '次') ?? items[0] ?? null;
+}
+
 export interface FoodAllergyRecordVo {
   id: number;
   babyId: number;
@@ -261,6 +280,9 @@ export interface SupplementVo {
 }
 
 export interface ActivityVo {
+  exerciseTypes: string[];
+  amount: string | null;
+  unit: ExerciseUnit | null;
   id: number;
   babyId: number;
   eventType: string;

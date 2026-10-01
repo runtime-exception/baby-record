@@ -166,6 +166,19 @@ model SupplementConfig {
   @@map("supplement_config")
 }
 
+model ExerciseConfig {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  emoji         String?
+  defaultAmount String   @map("default_amount")
+  defaultUnit   String   @map("default_unit")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdTime   DateTime @default(now()) @map("created_time")
+  updatedTime   DateTime @updatedAt @map("updated_time")
+
+  @@map("exercise_config")
+}
+
 model FeedingFood {
   feedingId Int @map("feeding_id")
   foodId    Int @map("food_id")
@@ -261,15 +274,18 @@ model Supplement {
 }
 
 model Activity {
-  id          Int      @id @default(autoincrement())
-  babyId      Int      @map("baby_id")
-  eventType   String   @map("event_type") // 玩耍/抬头/翻身/洗澡/练习坐/其他
-  eventTime   DateTime @map("event_time")
-  description String?
-  remark      String?
-  creatorId   Int      @map("creator_id")
-  createdTime DateTime @default(now()) @map("created_time")
-  updatedTime DateTime @updatedAt @map("updated_time")
+  id            Int      @id @default(autoincrement())
+  babyId        Int      @map("baby_id")
+  eventType     String   @map("event_type") // 运动/洗澡/其他
+  exerciseTypes String[] @default([]) @map("exercise_types")
+  amount        String?
+  unit          String?
+  eventTime     DateTime @map("event_time")
+  description   String?
+  remark        String?
+  creatorId     Int      @map("creator_id")
+  createdTime   DateTime @default(now()) @map("created_time")
+  updatedTime   DateTime @updatedAt @map("updated_time")
 
   baby    Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
   creator User @relation(fields: [creatorId], references: [id])
@@ -278,6 +294,7 @@ model Activity {
   @@index([creatorId])
   @@map("activity")
 }
+
 
 // ============ 预留扩展模型（建表，模块后续开发） ============
 

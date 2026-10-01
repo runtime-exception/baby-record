@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, IsArray, ArrayMaxSize, ArrayUnique, MaxLength, IsIn } from 'class-validator';
 
 export class CreateActivityDto {
   @ApiProperty({ description: '宝宝ID' })
@@ -8,7 +8,27 @@ export class CreateActivityDto {
   @IsInt()
   babyId: number;
 
-  @ApiProperty({ example: '抬头', description: '事件类型（玩耍/抬头/翻身/洗澡/练习坐/其他）' })
+  @ApiPropertyOptional({ description: '运动名称快照，按选择顺序排列', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @MaxLength(30, { each: true })
+  exerciseTypes?: string[];
+
+  @ApiPropertyOptional({ description: '运动数量' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  amount?: string | null;
+
+  @ApiPropertyOptional({ enum: ['分钟', '秒', '次'] })
+  @IsOptional()
+  @IsIn(['分钟', '秒', '次'])
+  unit?: string | null;
+
+  @ApiProperty({ example: '抬头', description: '事件类型（运动/洗澡/其他）' })
   @IsString()
   @IsNotEmpty()
   eventType: string;

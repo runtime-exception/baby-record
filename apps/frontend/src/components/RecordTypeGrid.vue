@@ -28,7 +28,7 @@ const items = [
   {
     icon: '✨',
     label: '其他',
-    desc: '补剂 / 玩耍 / 抬头…',
+    desc: '补剂 / 运动 / 成长…',
     color: 'from-ios-green/20 to-ios-green/5',
     to: '/record/activity',
   },

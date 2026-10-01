@@ -1,5 +1,5 @@
 import { http } from '@/utils/request';
-import type { ActivityVo, PaginatedResult } from '@baby-record/shared';
+import type { ActivityVo, ExerciseUnit, PaginatedResult } from '@baby-record/shared';
 
 export interface ActivityQuery {
   babyId: number;
@@ -13,6 +13,9 @@ export interface ActivityQuery {
 export interface CreateActivityPayload {
   babyId: number;
   eventType: string;
+  exerciseTypes?: string[];
+  amount?: string | null;
+  unit?: ExerciseUnit | null;
   eventTime: string;
   description?: string;
   remark?: string;

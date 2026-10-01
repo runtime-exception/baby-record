@@ -12,7 +12,7 @@ export class ActivityController {
   constructor(private readonly activityService: ActivityService) {}
 
   @Post()
-  @ApiOperation({ summary: '新增成长事件（玩耍/抬头/翻身/洗澡/练习坐/其他）' })
+  @ApiOperation({ summary: '新增成长事件（运动/洗澡/其他）' })
   create(@Body() dto: CreateActivityDto): Promise<ActivityVo> {
     return this.activityService.create(dto);
   }

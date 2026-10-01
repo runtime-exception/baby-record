@@ -176,6 +176,17 @@ async function logout() {
           </div>
           <span class="text-ios-secondary text-xl">›</span>
         </button>
+        <button
+          class="w-full bg-ios-card rounded-3xl p-4 shadow-card flex items-center gap-3 active:scale-[0.98] transition-transform"
+          @click="router.push('/profile/exercises')"
+        >
+          <span class="text-2xl">🤸</span>
+          <div class="flex-1 text-left">
+            <p class="text-sm font-semibold text-ios-label">运动管理</p>
+            <p class="text-xs text-ios-secondary mt-0.5">维护运动类型与默认数量、单位</p>
+          </div>
+          <span class="text-ios-secondary text-xl">›</span>
+        </button>
       </div>
     </section>
 
