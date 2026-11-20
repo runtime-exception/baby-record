@@ -21,10 +21,12 @@
     <view class="empty" wx:if="{{loading}}">加载中…</view>
     <button class="error" wx:elif="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
     <view class="empty" wx:elif="{{!filtered.length}}">暂无记录</view>
-    <view wx:else wx:for="{{filtered}}" wx:key="key" class="row recordRow" data-key="{{item.key}}" bindtap="view">
-      <view><view>{{item.icon}} {{item.label}}</view><view class="muted">{{item.detail}} {{item.creator}}</view></view>
-      <view class="muted">{{mode === 'range' ? item.date + ' ' : ''}}{{item.time}}</view>
-    </view>
+    <block wx:else>
+      <view wx:for="{{filtered}}" wx:key="key" class="row recordRow" data-key="{{item.key}}" bindtap="view">
+        <view><view>{{item.icon}} {{item.label}}</view><view class="muted">{{item.detail}} {{item.creator}}</view></view>
+        <view class="muted">{{mode === 'range' ? item.date + ' ' : ''}}{{item.time}}</view>
+      </view>
+    </block>
   </view>
   <view wx:if="{{detail}}" class="sheetBackdrop" bindtap="close">
     <view class="sheet panel" catchtap="viewSheet">

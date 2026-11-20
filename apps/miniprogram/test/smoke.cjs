@@ -20,6 +20,7 @@ const respond = (request, data, code = 0) => request.success({ statusCode: 200, 
 
 test('the native package registers all declared pages and their template events', () => {
   const manifest = require('../dist/app.json');
+  assert.equal(manifest.lazyCodeLoading, 'requiredComponents');
   assert.deepEqual(manifest.tabBar.list.map((item) => item.text), ['首页', '记录', '统计', '我的']);
   for (const tab of manifest.tabBar.list) {
     assert.ok(existsSync(join(root, tab.iconPath)));
