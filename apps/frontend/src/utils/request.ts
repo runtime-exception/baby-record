@@ -1,23 +1,31 @@
 import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
-  type InternalAxiosRequestConfig,
   type AxiosResponse,
 } from 'axios';
 import { $message } from './feedback';
 import type { ApiResponse } from '@baby-record/shared';
 
 const instance: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000,
   withCredentials: true,
 });
 
-// 请求拦截
-instance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => config,
-  (error) => Promise.reject(error),
-);
+let requestBaby: number | null = null;
+export function setRequestBaby(id: number | null) { requestBaby = id; }
+
+instance.interceptors.request.use((config) => {
+  if (requestBaby && /^\/(foods|exercise-configs|supplement-configs)(?:\/|$)/.test(config.url ?? '')) {
+    config.headers.set('X-Baby-Id', String(requestBaby));
+  }
+  return config;
+}, undefined, { synchronous: true });
+
+export function mediaUrl(path: string) {
+  if (path.startsWith('data:')) return path;
+  return (instance.defaults.baseURL ?? '').replace(/\/$/, '') + '/' + path;
+}
 
 // 响应拦截：统一拆包 { code, message, data }
 instance.interceptors.response.use(
@@ -32,7 +40,7 @@ instance.interceptors.response.use(
   },
   (error) => {
     const msg = error?.response?.data?.message || error?.message || '网络异常，请稍后重试';
-    const isLoginRequest = String(error?.config?.url || '').includes('/auth/login');
+    const isLoginRequest = String(error?.config?.url || '').startsWith('/auth/web/');
     if (error?.response?.status === 401 && !isLoginRequest) {
       const current = `${window.location.pathname}${window.location.search}`;
       if (window.location.pathname !== '/login') {
@@ -52,6 +60,7 @@ export const http = {
     return instance.get(url, { params }) as unknown as Promise<T>;
   },
   post<T>(url: string, data?: object): Promise<T> {
+    if (data instanceof FormData) return instance.post(url, data) as unknown as Promise<T>;
     return dedupe('post', url, data, () => instance.post(url, data));
   },
   patch<T>(url: string, data?: object): Promise<T> {
@@ -73,7 +82,7 @@ const inflight = new Map<string, Promise<unknown>>();
 const DEDUPE_TIMEOUT = 15000;
 
 function dedupeKey(method: string, url: string, data?: object): string {
-  return `${method} ${url} ${data == null ? '' : JSON.stringify(data)}`;
+  return `${requestBaby} ${method} ${url} ${data == null ? '' : JSON.stringify(data)}`;
 }
 
 function dedupe<T>(

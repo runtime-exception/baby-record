@@ -1,4 +1,5 @@
-import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { FamilyIdentityDto } from '../../family/identity.dto';
+import { ApiPropertyOptional, ApiProperty, IntersectionType, OmitType } from '@nestjs/swagger';
 import { Gender } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
@@ -70,3 +71,5 @@ export class CreateBabyDto {
   @IsString()
   avatar?: string;
 }
+
+export class CreateFamilyBabyDto extends IntersectionType(OmitType(CreateBabyDto, ['avatar'] as const), FamilyIdentityDto) {}

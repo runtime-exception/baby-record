@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { useAppFeedback } from '@/design-system/feedback';
 import AppToggle from '@/design-system/AppToggle.vue';
 import { EyeOutline } from '@vicons/ionicons5';
+import { mediaUrl } from '@/utils/request';
 import { babyApi } from '@/api/baby';
 import { useRouter } from 'vue-router';
 import AppHeader from '@/components/AppHeader.vue';
@@ -57,21 +58,24 @@ async function chooseAvatar(event: Event) {
   if (!file || !baby.value) return;
   if (!file.type.startsWith('image/')) { message.warning('请选择图片文件'); return; }
   if (file.size > 8 * 1024 * 1024) { message.warning('头像图片请小于 8MB'); return; }
-  const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const updated = await babyApi.update(baby.value!.id, { avatar: String(reader.result) });
-      babyStore.replaceBaby(updated);
-      message.success('头像已更新');
-    } catch { /* 请求层已提示 */ }
-  };
-  reader.readAsDataURL(file);
+  const id = baby.value.id;
+  try {
+    const updated = await babyApi.uploadAvatar(id, file);
+    babyStore.replaceBaby(updated);
+    message.success('头像已更新');
+  } catch { /* 请求层显示错误 */ }
   (event.target as HTMLInputElement).value = '';
+}
+
+async function copyBabyId(id: number) {
+  try {
+    await navigator.clipboard.writeText(String(id));
+    message.success('宝宝 ID 已复制');
+  } catch { message.warning('请手动复制宝宝 ID'); }
 }
 
 async function logout() {
   await authStore.logout();
-  userStore.clearUser();
   await router.replace('/login');
 }
 </script>
@@ -84,10 +88,10 @@ async function logout() {
     <section v-if="baby" class="px-5 mt-4">
       <div class="bg-gradient-to-br from-ios-blue to-ios-teal rounded-3xl p-5 shadow-soft text-white">
         <div class="flex items-center gap-3">
-          <button class="relative w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-4xl overflow-hidden" @click="avatarInput?.click()">
-            <img v-if="baby.avatar" :src="baby.avatar" alt="宝宝头像" class="w-full h-full object-cover" />
+          <button class="relative w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-4xl overflow-hidden" @click="baby.membership.isAdmin && avatarInput?.click()">
+            <img v-if="baby.avatar" :src="mediaUrl(baby.avatar)" alt="宝宝头像" class="w-full h-full object-cover" />
             <template v-else>👶</template>
-            <span class="absolute bottom-0 inset-x-0 text-[10px] leading-4 bg-black/30">更换</span>
+            <span v-if="baby.membership.isAdmin" class="absolute bottom-0 inset-x-0 text-[10px] leading-4 bg-black/30">更换</span>
           </button>
           <input ref="avatarInput" type="file" accept="image/*" capture="user" class="hidden" @change="chooseAvatar" />
           <div class="flex-1">
@@ -100,6 +104,7 @@ async function logout() {
             </span>
             <button
               class="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center text-sm active:scale-90 transition"
+              v-if="baby.membership.isAdmin"
               @click="router.push('/baby/edit')"
             >
               ✎
@@ -133,6 +138,14 @@ async function logout() {
         >
           {{ b.nickname || b.name }}
         </button>
+      </div>
+    </section>
+
+    <section v-if="baby" class="px-5 mt-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 rounded-3xl bg-ios-card p-4 shadow-card">
+        <button class="text-ios-blue" @click="copyBabyId(baby.id)">宝宝 ID {{ baby.id }} · 复制</button>
+        <RouterLink class="text-ios-blue" to="/family/members">家庭成员</RouterLink>
+        <RouterLink class="text-ios-blue" to="/family/bind">绑定宝宝</RouterLink>
       </div>
     </section>
 

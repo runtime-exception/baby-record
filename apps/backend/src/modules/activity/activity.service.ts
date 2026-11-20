@@ -30,7 +30,7 @@ export class ActivityService {
 
   async create(dto: CreateActivityDto): Promise<ActivityVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
-    const exercise = await this.exerciseData(dto);
+    const exercise = await this.exerciseData(dto.babyId, dto);
     const activity = await this.prisma.activity.create({
       data: {
         ...exercise,
@@ -47,7 +47,7 @@ export class ActivityService {
 
   async update(id: number, dto: UpdateActivityDto): Promise<ActivityVo> {
     const existing = await this.findOne(id);
-    const exercise = await this.exerciseData(dto, existing);
+    const exercise = await this.exerciseData(existing.babyId, dto, existing);
     const activity = await this.prisma.activity.update({
       where: { id },
       data: {
@@ -93,7 +93,7 @@ export class ActivityService {
     });
   }
 
-  private async exerciseData(dto: UpdateActivityDto, existing?: ActivityVo) {
+  private async exerciseData(babyId: number, dto: UpdateActivityDto, existing?: ActivityVo) {
     if ((dto.eventType ?? existing?.eventType) !== '运动') {
       return { exerciseTypes: [], amount: null, unit: null };
     }
@@ -101,7 +101,7 @@ export class ActivityService {
     if (!names.length || names.some((name) => !name.trim()) || new Set(names).size !== names.length) {
       throw new BusinessException(ErrorCode.PARAM_INVALID, '请至少选择一种运动，不能重复');
     }
-    const configs = await this.prisma.exerciseConfig.findMany({ where: { name: { in: names } } });
+    const configs = await this.prisma.exerciseConfig.findMany({ where: { babyId, name: { in: names } } });
     const selected = names.map((name) => {
       const config = configs.find((item) => item.name === name);
       if (config?.isActive) return config;

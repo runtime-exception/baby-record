@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { FamilyRequest } from '../auth/family-scope';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SupplementConfigService } from './supplement-config.service';
 import { CreateSupplementConfigDto } from './dto/create-supplement-config.dto';
@@ -12,22 +13,22 @@ export class SupplementConfigController {
   @Get()
   @ApiOperation({ summary: '查询家庭共享补剂配置' })
   @ApiQuery({ name: 'includeInactive', required: false, type: Boolean })
-  findAll(@Query('includeInactive') includeInactive?: string) {
-    return this.service.findAll(includeInactive === 'true');
+  findAll(@Req() request: FamilyRequest, @Query('includeInactive') includeInactive?: string) {
+    return this.service.findAll(request.babyId, includeInactive === 'true');
   }
 
   @Post()
-  create(@Body() dto: CreateSupplementConfigDto) {
-    return this.service.create(dto);
+  create(@Req() request: FamilyRequest, @Body() dto: CreateSupplementConfigDto) {
+    return this.service.create(request.babyId, dto);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSupplementConfigDto) {
-    return this.service.update(id, dto);
+  update(@Req() request: FamilyRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSupplementConfigDto) {
+    return this.service.update(request.babyId, id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.service.remove(id);
+  remove(@Req() request: FamilyRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.service.remove(request.babyId, id);
   }
 }

@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "nest build",
+    "test:wechat-family": "pnpm build && node test/run-wechat-family.mjs",
     "test:allergy-score": "ts-node test/allergy-score.test.ts",
     "test:supplement-config": "ts-node test/supplement-config.test.ts",
     "test:sleep-rules": "ts-node test/sleep-rules.test.ts",

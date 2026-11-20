@@ -21,22 +21,23 @@ export interface SupplementConfigVo {
 export class SupplementConfigService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(includeInactive = false): Promise<SupplementConfigVo[]> {
+  findAll(babyId: number, includeInactive = false): Promise<SupplementConfigVo[]> {
     return this.prisma.supplementConfig
       .findMany({
-        where: includeInactive ? undefined : { isActive: true },
+        where: { babyId, ...(!includeInactive && { isActive: true }) },
         orderBy: { id: 'asc' },
       })
       .then((items) => items.map((item) => this.toVo(item)));
   }
 
-  async create(dto: CreateSupplementConfigDto): Promise<SupplementConfigVo> {
+  async create(babyId: number, dto: CreateSupplementConfigDto): Promise<SupplementConfigVo> {
     const name = dto.name.trim();
     if (!name) throw new BusinessException(ErrorCode.PARAM_INVALID, '补剂名称不能为空');
-    const existing = await this.prisma.supplementConfig.findUnique({ where: { name } });
+    const existing = await this.prisma.supplementConfig.findUnique({ where: { babyId_name: { babyId, name } } });
     if (existing) throw new BusinessException(ErrorCode.PARAM_INVALID, '该补剂已存在');
     const item = await this.prisma.supplementConfig.create({
       data: {
+        babyId,
         name,
         emoji: this.normalizeOptional(dto.emoji),
         defaultAmount: this.normalizeOptional(dto.defaultAmount),
@@ -46,20 +47,20 @@ export class SupplementConfigService {
     return this.toVo(item);
   }
 
-  async update(id: number, dto: UpdateSupplementConfigDto): Promise<SupplementConfigVo> {
-    await this.findOne(id);
+  async update(babyId: number, id: number, dto: UpdateSupplementConfigDto): Promise<SupplementConfigVo> {
+    await this.findOne(babyId, id);
     const name = dto.name?.trim();
     if (dto.name !== undefined && !name) {
       throw new BusinessException(ErrorCode.PARAM_INVALID, '补剂名称不能为空');
     }
     if (name !== undefined) {
-      const duplicate = await this.prisma.supplementConfig.findUnique({ where: { name } });
+      const duplicate = await this.prisma.supplementConfig.findUnique({ where: { babyId_name: { babyId, name } } });
       if (duplicate && duplicate.id !== id) {
         throw new BusinessException(ErrorCode.PARAM_INVALID, '该补剂已存在');
       }
     }
     const item = await this.prisma.supplementConfig.update({
-      where: { id },
+      where: { id, babyId },
       data: {
         ...(name !== undefined && { name }),
         ...(dto.emoji !== undefined && { emoji: this.normalizeOptional(dto.emoji) }),
@@ -73,13 +74,13 @@ export class SupplementConfigService {
     return this.toVo(item);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.findOne(id);
-    await this.prisma.supplementConfig.update({ where: { id }, data: { isActive: false } });
+  async remove(babyId: number, id: number): Promise<void> {
+    await this.findOne(babyId, id);
+    await this.prisma.supplementConfig.update({ where: { id, babyId }, data: { isActive: false } });
   }
 
-  private async findOne(id: number): Promise<SupplementConfig> {
-    const item = await this.prisma.supplementConfig.findUnique({ where: { id } });
+  private async findOne(babyId: number, id: number): Promise<SupplementConfig> {
+    const item = await this.prisma.supplementConfig.findUnique({ where: { id, babyId } });
     if (!item) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND, '补剂配置不存在');
     return item;
   }

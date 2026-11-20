@@ -1,0 +1,8 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen center">
+  <view class="panel" style="margin-top:18vh">
+    <view class="value">👶</view><view class="heading">宝宝成长记录</view>
+    <view class="subtitle">与你的家人一起记录宝宝成长</view>
+    <button class="primary section" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">微信登录</button>
+  </view>
+</view>

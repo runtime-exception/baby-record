@@ -1,41 +1,59 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { babyApi } from '@/api/baby';
-import type { BabyVo } from '@baby-record/shared';
+import type { BabyVo, MemberBaby } from '@baby-record/shared';
+
+import { setRequestBaby } from '@/utils/request';
 
 const CURRENT_BABY_KEY = 'baby-record:currentBabyId';
 
 export const useBabyStore = defineStore('baby', () => {
-  const babies = ref<BabyVo[]>([]);
+  const babies = ref<MemberBaby[]>([]);
   const currentBabyId = ref<number | null>(null);
   const loading = ref(false);
 
   const currentBaby = computed(() => babies.value.find((b) => b.id === currentBabyId.value) || null);
 
+  let generation = 0;
+
   async function loadBabies() {
+    const request = ++generation;
     loading.value = true;
     try {
-      babies.value = await babyApi.list();
-      if (babies.value.length && currentBabyId.value === null) {
-        const saved = Number(localStorage.getItem(CURRENT_BABY_KEY));
-        const target = babies.value.find((b) => b.id === saved) || babies.value[0];
-        currentBabyId.value = target.id;
-      }
+      const next = await babyApi.list();
+      if (request !== generation) return;
+      babies.value = next;
+      const saved = currentBabyId.value ?? Number(localStorage.getItem(CURRENT_BABY_KEY));
+      const target = next.find((item) => item.id === saved) ?? next[0];
+      select(target?.id ?? null);
     } finally {
-      loading.value = false;
+      if (request === generation) loading.value = false;
     }
   }
 
-  function setCurrentBaby(id: number) {
+  function select(id: number | null) {
+    setRequestBaby(id);
     currentBabyId.value = id;
-    localStorage.setItem(CURRENT_BABY_KEY, String(id));
+    if (id === null) localStorage.removeItem(CURRENT_BABY_KEY);
+    else localStorage.setItem(CURRENT_BABY_KEY, String(id));
+  }
+
+  function setCurrentBaby(id: number) {
+    if (babies.value.some((item) => item.id === id)) select(id);
   }
 
   function replaceBaby(baby: BabyVo) {
     const index = babies.value.findIndex((item) => item.id === baby.id);
-    if (index >= 0) babies.value.splice(index, 1, baby);
-    else babies.value.push(baby);
+    if (index >= 0) babies.value.splice(index, 1, { ...babies.value[index], ...baby });
   }
 
-  return { babies, currentBabyId, currentBaby, loading, loadBabies, setCurrentBaby, replaceBaby };
+  function clear() {
+    generation++;
+    loading.value = false;
+    babies.value = [];
+    select(null);
+    localStorage.removeItem('baby-record:currentUser');
+  }
+
+  return { babies, currentBabyId, currentBaby, loading, loadBabies, setCurrentBaby, replaceBaby, clear };
 });

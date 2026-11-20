@@ -31,7 +31,7 @@
 - 🧩 **领域驱动模块化**：每个业务域自成 NestJS 模块，统计 / 仪表盘 / 间隔分析作为只读聚合层复用底层事件。
 - 🗄️ **原始事件优先**：保留完整原始事件（不丢弃字段、不只存聚合结果），为生长曲线与 AI 分析留足数据底座。
 - 🛡️ **统一契约**：统一响应格式 `{ code, message, data }`、统一异常处理、全局 DTO 校验、Swagger 自动文档。
-- 🔐 **访问认证**：部署密码由环境变量注入，服务端签发带有效期的 HttpOnly Cookie，业务 API 默认全部受保护。
+- 🔐 **访问认证**：微信小程序登录、Web 扫码登录和按宝宝授权的家庭成员管理。
 - 💤 **智能哄睡提醒**：按宝宝月龄和最近醒来时间实时显示正常清醒、进入哄睡窗口或清醒过久状态。
 - 🐳 **一键部署**：多阶段构建的单镜像，内置 nginx 反代 + Node 运行时，自动建表与种子数据。
 
@@ -104,19 +104,19 @@ baby-record-system
 
 ### 方式一：Docker 一键部署（推荐）
 
-单镜像内置 nginx + Node，启动时自动执行种子数据。默认连接外部 PostgreSQL，也可启用内置 PostgreSQL。
+单镜像内置 nginx + Node，启动时自动执行 Prisma 数据库迁移。默认连接外部 PostgreSQL，也可启用内置 PostgreSQL。
 
 **连接外部 PostgreSQL（默认）**：
 
 ```bash
-# 复制部署配置并填写访问密码、数据库地址和数据库凭据
+# 复制部署配置并填写微信小程序凭据和数据库连接信息
 cp .env.example .env
 # 编辑 .env
 docker compose up -d --build
 # 访问 http://localhost:8080
 ```
 
-**启用内置 PostgreSQL**（自带建表与种子数据）：
+**启用内置 PostgreSQL**（启动时执行迁移）：
 
 编辑 `docker-compose.yml`，取消注释 `postgres` 服务、`app.depends_on` 与 `volumes`，然后：
 
@@ -126,6 +126,32 @@ docker compose up -d --build
 ```
 
 > 镜像构建过程：① 构建前端 → ② 构建后端 → ③ 运行时镜像安装生产依赖、生成 Prisma Client、复制产物，由 nginx 反代 `/api` 与 `/docs` 到后端 NestJS。
+
+### 微信小程序
+
+1. 在后端设置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET` 和 `WECHAT_ENV_VERSION`，启动后端并执行数据库迁移。
+2. 在微信公众平台配置 API 的 HTTPS 主机为 request、uploadFile 和 downloadFile 合法域名。
+3. 在仓库根目录构建小程序，随后用微信开发者工具导入 `apps/miniprogram/dist`。体验版联调时将服务端版本设为 `trial`，上传为体验版后再试扫网页登录码。
+
+```bash
+WECHAT_APP_ID=wx你的AppID MINIPROGRAM_API_BASE_URL=https://baby.example.com/api/v1 pnpm build:miniprogram
+```
+
+本地默认 API 指向 `http://localhost:3000/api/v1`。生产环境使用 HTTPS 和 Secure Cookie。小程序端只需 AppID 和 API 地址。
+
+### 现有宝宝迁移
+
+先备份数据库并在副本执行 Prisma 迁移。每个旧宝宝在管理员认领后开放访问，原记录与署名继续保留。部署者在后端运行目录生成认领码，将它和宝宝 ID 私下交给对应家长。家长登录微信后，在「绑定已有宝宝」勾选「我有旧宝宝认领码」，填写 ID、身份和认领码。
+
+```bash
+# 从项目根目录在 Docker 部署中生成指定宝宝的认领码，默认 24 小时失效
+docker compose exec -w /app/apps/backend app node dist/prisma/claim-baby.js 123
+# 查看旧配置，再将指定配置复制给指定宝宝
+docker compose exec -w /app/apps/backend app node dist/prisma/assign-legacy-config.js list
+docker compose exec -w /app/apps/backend app node dist/prisma/assign-legacy-config.js food 12 123
+```
+
+配置类型为 `food`、`supplement` 或 `exercise`。已有引用的配置随历史记录迁移。旧的全局配置保留给部署者按归属分配。分配命令遇到目标宝宝已有同名配置时保留当前配置，确需覆盖时显式传 `--replace`。
 
 ### 方式二：本地开发
 
@@ -139,9 +165,8 @@ pnpm install
 cp apps/backend/.env.example apps/backend/.env
 #   编辑 .env，填入数据库连接与 APP_PORT / API_PREFIX / SWAGGER_PATH
 
-# 3. 数据库迁移 + 种子数据
-pnpm --filter @baby-record/backend prisma:migrate
-pnpm --filter @baby-record/backend prisma:seed
+# 3. 数据库迁移
+pnpm --filter @baby-record/backend prisma:deploy
 
 # 4. 启动后端（http://localhost:3000）
 pnpm dev:backend
@@ -157,7 +182,8 @@ pnpm dev           # 即 pnpm dev:frontend
 |---|---|
 | `pnpm dev` | 启动前端（Vite） |
 | `pnpm dev:backend` | 启动后端（watch 模式） |
-| `pnpm build:frontend` | 构建前端 |
+| `pnpm build:frontend` | 构建 Web 前端 |
+| `pnpm build:miniprogram` | 构建微信原生小程序 |
 | `pnpm build:backend` | 构建后端 |
 | `pnpm lint` | 全量 lint |
 | `pnpm --filter @baby-record/backend prisma:studio` | Prisma 数据库可视化管理 |
@@ -176,8 +202,9 @@ pnpm dev           # 即 pnpm dev:frontend
 | `NODE_ENV` | `development` | 运行环境 |
 | `API_PREFIX` | `api/v1` | API 全局前缀 |
 | `SWAGGER_PATH` | `docs` | Swagger 文档路径 |
-| `BABY_RECORD_PASSWORD` | — | 必填，项目访问密码，至少 6 位；不可写入前端或提交到仓库 |
-| `BABY_RECORD_AUTH_SECRET` | 默认使用访问密码派生 | 可选会话签名密钥，至少 32 位；修改后已有会话失效 |
+| `WECHAT_APP_ID` | — | 微信小程序 AppID，两端使用同一个小程序账号 |
+| `WECHAT_APP_SECRET` | — | 微信小程序 AppSecret，仅配置在服务端 |
+| `WECHAT_ENV_VERSION` | `release` | 扫码打开的版本，可设为 `trial` 或 `develop` |
 | `BABY_RECORD_SESSION_DAYS` | `30` | 登录状态有效天数，范围 1–365 |
 | `BABY_RECORD_COOKIE_SECURE` | 生产环境默认 `true` | HTTPS 部署设为 `true`；直接使用 HTTP 时设为 `false` |
 | `CORS_ORIGIN` | `http://localhost:5173` | 本地前端开发源，允许携带认证 Cookie |
@@ -211,7 +238,8 @@ pnpm dev           # 即 pnpm dev:frontend
 | statistics | `/statistics` | 区间统计（today/7d/30d/custom） |
 | dashboard | `/dashboard` | 仪表盘概览 |
 | chart | `/charts` | 可视化图表数据 |
-| auth | `/auth/login`、`/auth/status`、`/auth/logout` | 项目访问认证（公开接口） |
+| auth | `/auth/wechat`、`/auth/web/*`、`/auth/status`、`/auth/logout` | 微信登录与 Web 扫码 |
+| family | `/family/applications`、`/family/claim`、`/family/:babyId/members` | 申请、认领、审批与家庭成员 |
 
 ## 数据库设计
 
@@ -241,8 +269,15 @@ ER 图见 [docs/er-diagram.md](./docs/er-diagram.md)，建表 SQL 见 [docs/sche
 
 ### 验证方法
 
+`pnpm test:miniprogram` 检查小程序包、页面注册、登录状态和宝宝切换。后端迁移与家庭权限测试使用独立 PostgreSQL，示例命令如下。
+
+```bash
+TEST_DATABASE_URL=postgresql://tester:password@127.0.0.1:5432/postgres pnpm --filter @baby-record/backend test:wechat-family
+```
+
+
 1. 不带 Cookie 请求 `GET /api/v1/babies`，应返回 HTTP 401。
-2. 向 `POST /api/v1/auth/login` 提交错误密码，页面应显示“密码错误”；提交正确密码后应进入系统并收到 HttpOnly Cookie。
+2. 网页生成登录码后，用微信扫码核对确认码，再由当前浏览器兑换 HttpOnly Cookie。
 3. 刷新或关闭后重新打开浏览器，应在有效期内保持登录；在“我的”点击退出后应回到登录页。
 4. 修改最近一条睡眠的结束时间，分别模拟小于推荐下限、介于上下限、超过上限，首页圆点应依次为绿色、蓝色、红色，并在不刷新页面时自动切换。
 

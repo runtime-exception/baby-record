@@ -1,0 +1,34 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="heading">统计</view><view class="subtitle">宝宝成长趋势</view>
+  <view class="panel">
+    <view class="chips" style="margin-top:0"><button wx:for="{{options}}" wx:key="value" class="chip {{range === item.value ? 'selected' : ''}}" data-range="{{item.value}}" bindtap="chooseRange">{{item.label}}</button></view>
+    <view class="row field" wx:if="{{range === 'custom'}}">
+      <picker class="inlinePicker" mode="date" end="{{today}}" value="{{startDate}}" data-field="start" bindchange="changeDate">{{startDate}}</picker>
+      <picker class="inlinePicker" mode="date" start="{{startDate}}" end="{{today}}" value="{{endDate}}" data-field="end" bindchange="changeDate">{{endDate}}</picker>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{loading}}">加载中…</view>
+  <button class="error" wx:if="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+  <block wx:if="{{overview && !loading}}">
+    <view class="panel" wx:for="{{charts}}" wx:for-item="chart" wx:key="key">
+      <view class="title">{{chart.title}}</view>
+      <view class="empty" wx:if="{{chart.empty}}">暂无记录</view>
+      <block wx:else>
+        <canvas canvas-id="chart-{{chart.key}}" class="section" style="width:100%;height:150px" data-key="{{chart.key}}" bindtap="showValue" />
+        <view class="chips"><text wx:for="{{chart.series}}" wx:key="name" class="muted" style="color:{{item.color}}">● {{item.name}}</text></view>
+        <view class="line muted" wx:if="{{chart.note}}">{{chart.note}}</view>
+      </block>
+    </view>
+    <view class="panel stack">
+      <view class="title">护理统计</view>
+      <view class="row line"><text>喂养 {{overview.feeding.count}} 次</text><text class="muted">总量 {{overview.feeding.totalAmount}} ml</text></view>
+      <view class="row"><text>平均奶量 {{overview.feeding.avgAmount}} ml</text><text class="muted">间隔 {{overview.feeding.avgIntervalText}}</text></view>
+      <view class="row line"><text>纸尿裤 {{overview.diaper.total}} 次</text><text class="muted">尿 {{overview.diaper.pee}} · 便 {{overview.diaper.poop}}</text></view>
+      <view class="row line"><text>睡眠 {{overview.sleep.count}} 次</text><text class="muted">合计 {{overview.sleep.totalText}}</text></view>
+      <view class="row"><text>白天 {{overview.sleep.daytimeText}}</text><text class="muted">夜间 {{overview.sleep.nightText}} · 平均 {{overview.sleep.avgText}}</text></view>
+      <view class="line"><text>补剂 {{overview.supplement.count}} 次</text><view wx:for="{{overview.supplement.typeStats}}" wx:key="name" class="muted">{{item.name}} {{item.count}} 次</view></view>
+      <view class="line"><text>活动 {{overview.activity.total}} 次</text><view wx:for="{{overview.activity.typeStats}}" wx:key="eventType" class="muted">{{item.eventType}} {{item.count}} 次</view></view>
+    </view>
+  </block>
+</view>

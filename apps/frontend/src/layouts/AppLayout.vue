@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useBabyStore } from '@/stores/baby';
 import TabBar from '@/components/TabBar.vue';
+const babies = useBabyStore();
 </script>
 
 <template>
@@ -8,7 +10,7 @@ import TabBar from '@/components/TabBar.vue';
       <main class="min-h-screen pb-24">
         <RouterView v-slot="{ Component }">
           <transition name="page" mode="out-in">
-            <component :is="Component" />
+            <component :is="Component" :key="babies.currentBabyId" />
           </transition>
         </RouterView>
       </main>

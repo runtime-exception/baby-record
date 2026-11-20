@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
-import { useUserStore } from '@/stores/user';
 import { useAuthStore } from '@/stores/auth';
 import { useBabyStore } from '@/stores/baby';
 
@@ -98,9 +97,9 @@ const routes: RouteRecordRaw[] = [
         meta: { tab: 'profile' },
       },
       {
-        path: 'baby/new',
-        name: 'baby-new',
-        component: () => import('@/views/BabyFormView.vue'),
+        path: 'family/members',
+        name: 'family-members',
+        component: () => import('@/views/FamilyMembersView.vue'),
         meta: { tab: 'profile' },
       },
       {
@@ -110,6 +109,16 @@ const routes: RouteRecordRaw[] = [
         meta: { tab: 'profile' },
       },
     ],
+  },
+  {
+    path: '/baby/new',
+    name: 'baby-new',
+    component: () => import('@/views/BabyFormView.vue'),
+  },
+  {
+    path: '/family/bind',
+    name: 'family-bind',
+    component: () => import('@/views/FamilyBindingView.vue'),
   },
   {
     path: '/onboarding',
@@ -126,31 +135,23 @@ const router = createRouter({
   },
 });
 
-// 先校验服务端访问会话，再处理本地记录人身份选择
 router.beforeEach(async (to) => {
-  const authStore = useAuthStore();
-  const userStore = useUserStore();
-  const authenticated = await authStore.ensureChecked();
+  const auth = useAuthStore();
+  if (!await auth.ensureChecked()) {
+    return to.name === 'login' ? true : { name: 'login', query: { redirect: to.fullPath } };
+  }
 
-  if (!authenticated && to.name !== 'login') {
-    return { name: 'login', query: { redirect: to.fullPath } };
+  const babies = useBabyStore();
+  const guestRoutes = ['onboarding', 'baby-new', 'family-bind'];
+  try {
+    await babies.loadBabies();
+  } catch {
+    return false;
   }
-  if (authenticated && to.name === 'login') {
-    return { name: userStore.hasIdentity ? 'dashboard' : 'onboarding' };
-  }
-  // 刷新或直接打开深层路由时，确保页面挂载前已有宝宝上下文。
-  if (authenticated && userStore.hasIdentity) {
-    const babyStore = useBabyStore();
-    if (!babyStore.babies.length && !babyStore.loading) {
-      await babyStore.loadBabies();
-    }
-  }
-  if (!userStore.hasIdentity && to.name !== 'onboarding' && to.name !== 'login') {
-    return { name: 'onboarding' };
-  }
-  if (userStore.hasIdentity && to.name === 'onboarding') {
-    return { name: 'dashboard' };
-  }
+  if (to.name === 'login') return { name: babies.currentBaby ? 'dashboard' : 'onboarding' };
+  if (!babies.currentBaby && !guestRoutes.includes(String(to.name))) return { name: 'onboarding' };
+  if (babies.currentBaby && to.name === 'onboarding') return { name: 'dashboard' };
+  if (to.name === 'baby-edit' && !babies.currentBaby?.membership.isAdmin) return { name: 'profile' };
   return true;
 });
 

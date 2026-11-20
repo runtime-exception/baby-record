@@ -22,25 +22,26 @@ export interface ExerciseConfigVo {
 export class ExerciseConfigService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(includeInactive = false): Promise<ExerciseConfigVo[]> {
+  findAll(babyId: number, includeInactive = false): Promise<ExerciseConfigVo[]> {
     return this.prisma.exerciseConfig
       .findMany({
-        where: includeInactive ? undefined : { isActive: true },
+        where: { babyId, ...(!includeInactive && { isActive: true }) },
         orderBy: { id: 'asc' },
       })
       .then((items) => items.map((item) => this.toVo(item)));
   }
 
-  async create(dto: CreateExerciseConfigDto): Promise<ExerciseConfigVo> {
+  async create(babyId: number, dto: CreateExerciseConfigDto): Promise<ExerciseConfigVo> {
     const name = dto.name.trim();
     if (!name) throw new BusinessException(ErrorCode.PARAM_INVALID, '运动名称不能为空');
-    const existing = await this.prisma.exerciseConfig.findUnique({ where: { name } });
+    const existing = await this.prisma.exerciseConfig.findUnique({ where: { babyId_name: { babyId, name } } });
     if (existing) throw new BusinessException(ErrorCode.PARAM_INVALID, '该运动已存在');
     const defaultAmount = dto.defaultAmount === undefined ? '1' : dto.defaultAmount;
     const defaultUnit = dto.defaultUnit === undefined ? '分钟' : dto.defaultUnit;
     validateExerciseAmount(defaultAmount, defaultUnit);
     const item = await this.prisma.exerciseConfig.create({
       data: {
+        babyId,
         name,
         emoji: this.normalizeOptional(dto.emoji),
         defaultAmount: defaultAmount.trim(),
@@ -50,21 +51,21 @@ export class ExerciseConfigService {
     return this.toVo(item);
   }
 
-  async update(id: number, dto: UpdateExerciseConfigDto): Promise<ExerciseConfigVo> {
-    const existing = await this.findOne(id);
+  async update(babyId: number, id: number, dto: UpdateExerciseConfigDto): Promise<ExerciseConfigVo> {
+    const existing = await this.findOne(babyId, id);
     validateExerciseAmount(dto.defaultAmount === undefined ? existing.defaultAmount : dto.defaultAmount, dto.defaultUnit === undefined ? existing.defaultUnit : dto.defaultUnit);
     const name = dto.name?.trim();
     if (dto.name !== undefined && !name) {
       throw new BusinessException(ErrorCode.PARAM_INVALID, '运动名称不能为空');
     }
     if (name !== undefined) {
-      const duplicate = await this.prisma.exerciseConfig.findUnique({ where: { name } });
+      const duplicate = await this.prisma.exerciseConfig.findUnique({ where: { babyId_name: { babyId, name } } });
       if (duplicate && duplicate.id !== id) {
         throw new BusinessException(ErrorCode.PARAM_INVALID, '该运动已存在');
       }
     }
     const item = await this.prisma.exerciseConfig.update({
-      where: { id },
+      where: { id, babyId },
       data: {
         ...(name !== undefined && { name }),
         ...(dto.emoji !== undefined && { emoji: this.normalizeOptional(dto.emoji) }),
@@ -76,13 +77,13 @@ export class ExerciseConfigService {
     return this.toVo(item);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.findOne(id);
-    await this.prisma.exerciseConfig.update({ where: { id }, data: { isActive: false } });
+  async remove(babyId: number, id: number): Promise<void> {
+    await this.findOne(babyId, id);
+    await this.prisma.exerciseConfig.update({ where: { id, babyId }, data: { isActive: false } });
   }
 
-  private async findOne(id: number): Promise<ExerciseConfig> {
-    const item = await this.prisma.exerciseConfig.findUnique({ where: { id } });
+  private async findOne(babyId: number, id: number): Promise<ExerciseConfig> {
+    const item = await this.prisma.exerciseConfig.findUnique({ where: { id, babyId } });
     if (!item) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND, '运动配置不存在');
     return item;
   }

@@ -1,14 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { AuthService } from './modules/auth/auth.service';
-import { ErrorCode } from './common/enums/error-code.enum';
 import { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
@@ -45,21 +42,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // 宝宝头像同样属于私有数据；静态资源不经过 Nest Guard，需要显式校验会话
-  const authService = app.get(AuthService);
-  app.use('/uploads', (request: Request, response: Response, next: NextFunction) => {
-    if (!authService.isAuthenticated(request)) {
-      return response.status(401).json({
-        code: ErrorCode.UNAUTHORIZED,
-        message: '登录已过期，请重新登录',
-        data: null,
-      });
-    }
+  // 宝宝资料、媒体和登录结果仅允许当前请求使用。
+  app.use('/' + apiPrefix, (_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader('Cache-Control', 'private, no-store');
     next();
   });
-
-  // 静态文件服务（宝宝头像上传目录）
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   // Swagger 文档
   const swaggerConfig = new DocumentBuilder()

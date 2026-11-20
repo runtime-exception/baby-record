@@ -1,0 +1,38 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="heading">首页</view><view class="subtitle">{{baby ? (baby.nickname || baby.name) + ' 的成长记录' : '宝宝成长记录'}}</view>
+  <view class="empty" wx:if="{{loading && !baby}}">加载中…</view>
+  <button class="error" wx:if="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+  <block wx:if="{{baby}}">
+    <view class="panel hero">
+      <view class="row">
+        <view><view class="title">{{baby.name}}</view><view class="value section">{{baby.age.totalMonths}} <text style="font-size:26rpx">个月 {{baby.age.days}} 天</text></view></view>
+        <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" /><view class="avatar" wx:else>👶</view>
+      </view>
+      <view class="muted section" wx:if="{{summary.latestGrowth}}">身高 {{summary.latestGrowth.height || '—'}} cm · 体重 {{summary.latestGrowth.weight || '—'}} kg</view>
+    </view>
+    <view class="grid section">
+      <view class="panel" wx:for="{{cards}}" wx:key="label"><view class="muted">{{item.icon}} {{item.label}}</view><view class="title section">{{item.ago}}</view><view class="muted">{{item.detail}}</view></view>
+      <view class="panel"><view class="muted">🌡️ 体温</view><view class="title section">{{summary.latestTemperature ? summary.latestTemperature.temperature + ' ℃' : '暂无记录'}}</view><view class="muted">{{tempStatus}}</view></view>
+    </view>
+    <view class="panel stack" wx:if="{{nextFeeding || nextSleep || summary.wakePrediction.isSleeping}}">
+      <view wx:if="{{nextFeeding}}"><text class="title">建议喂养 {{nextFeeding}}</text><view class="muted">间隔 {{summary.feedingSuggestion.intervalRangeText}}<text wx:if="{{summary.feedingSuggestion.perFeedMinMl}}"> · 每次 {{summary.feedingSuggestion.perFeedMinMl}}–{{summary.feedingSuggestion.perFeedMaxMl}} ml</text></view></view>
+      <view wx:if="{{nextSleep || summary.wakePrediction.isSleeping}}"><text class="title">{{summary.wakePrediction.isSleeping ? '正在睡觉' : '建议入睡 ' + nextSleep}}</text><view class="muted" wx:if="{{nextSleep}}">建议清醒 {{summary.wakePrediction.recommendedWakeMinutes}} 分钟</view></view>
+    </view>
+    <view class="panel"><view class="title">快速记录</view><view class="chips">
+      <button wx:for="{{quick}}" wx:key="kind" data-kind="{{item.kind}}" bindtap="open">{{item.icon}} {{item.label}}</button>
+    </view></view>
+    <view class="panel" wx:if="{{summary.foodAllergySummary.allergic.length || summary.foodAllergySummary.possible.length || summary.foodAllergySummary.notAllergic.length}}">
+      <view class="title">辅食排敏</view>
+      <view class="line muted" wx:for="{{summary.foodAllergySummary.allergic}}" wx:key="foodId">{{item.foodName}} · 过敏</view>
+      <view class="line muted" wx:for="{{summary.foodAllergySummary.possible}}" wx:key="foodId">{{item.foodName}} · 可能过敏</view>
+      <view class="line muted" wx:for="{{summary.foodAllergySummary.notAllergic}}" wx:key="foodId">{{item.foodName}} · 未发现过敏</view>
+    </view>
+    <view class="panel"><view class="row"><view class="title">今日记录</view><button bindtap="history">查看历史</button></view>
+      <view wx:if="{{!today.length}}" class="empty">今天还没有记录</view>
+      <view wx:for="{{today}}" wx:key="key" class="row recordRow" data-kind="{{item.kind}}" data-id="{{item.id}}" bindtap="open">
+        <view>{{item.icon}} {{item.label}}<view class="muted">{{item.detail}}</view></view><text class="muted">{{item.time}}</text>
+      </view>
+    </view>
+  </block>
+</view>

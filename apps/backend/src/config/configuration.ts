@@ -41,8 +41,9 @@ export default () => {
       corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     },
     auth: {
-      password: process.env.BABY_RECORD_PASSWORD,
-      secret: process.env.BABY_RECORD_AUTH_SECRET || process.env.BABY_RECORD_PASSWORD,
+      wechatAppId: process.env.WECHAT_APP_ID,
+      wechatAppSecret: process.env.WECHAT_APP_SECRET,
+      wechatEnvVersion: process.env.WECHAT_ENV_VERSION,
       sessionDays: Number(process.env.BABY_RECORD_SESSION_DAYS) || 30,
       cookieSecure:
         process.env.BABY_RECORD_COOKIE_SECURE === 'true' ||

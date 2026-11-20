@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType, OmitType } from '@nestjs/swagger';
 import { CreateBabyDto } from './create-baby.dto';
 
-export class UpdateBabyDto extends PartialType(CreateBabyDto) {}
+export class UpdateBabyDto extends PartialType(OmitType(CreateBabyDto, ['avatar'] as const)) {}

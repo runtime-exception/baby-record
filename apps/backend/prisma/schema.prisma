@@ -67,6 +67,12 @@ model Baby {
   createdTime       DateTime @default(now()) @map("created_time")
   updatedTime       DateTime @updatedAt @map("updated_time")
 
+  members           BabyMember[]
+  claim             BabyClaim?
+  foods             Food[]
+  supplementConfigs SupplementConfig[]
+  exerciseConfigs   ExerciseConfig[]
+
   feedings       Feeding[]
   diapers        Diaper[]
   sleeps         Sleep[]
@@ -87,6 +93,7 @@ model User {
   role        UserRole
   createdTime DateTime @default(now()) @map("created_time")
 
+  membership    BabyMember?
   feedings      Feeding[]
   diapers       Diaper[]
   sleeps        Sleep[]
@@ -141,7 +148,7 @@ model Feeding {
 
 model Food {
   id          Int      @id @default(autoincrement())
-  name        String   @unique
+  name        String
   emoji       String?
   isActive    Boolean  @default(true) @map("is_active")
   createdTime DateTime @default(now()) @map("created_time")
@@ -150,12 +157,16 @@ model Food {
   feedings       FeedingFood[]
   allergyRecords FoodAllergyRecord[]
 
+  babyId Int? @map("baby_id")
+  baby Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@unique([babyId, name])
   @@map("food")
 }
 
 model SupplementConfig {
   id            Int      @id @default(autoincrement())
-  name          String   @unique
+  name          String
   emoji         String?
   defaultAmount String?  @map("default_amount")
   defaultUnit   String?  @map("default_unit")
@@ -163,12 +174,16 @@ model SupplementConfig {
   createdTime   DateTime @default(now()) @map("created_time")
   updatedTime   DateTime @updatedAt @map("updated_time")
 
+  babyId Int? @map("baby_id")
+  baby Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@unique([babyId, name])
   @@map("supplement_config")
 }
 
 model ExerciseConfig {
   id            Int      @id @default(autoincrement())
-  name          String   @unique
+  name          String
   emoji         String?
   defaultAmount String   @map("default_amount")
   defaultUnit   String   @map("default_unit")
@@ -176,6 +191,10 @@ model ExerciseConfig {
   createdTime   DateTime @default(now()) @map("created_time")
   updatedTime   DateTime @updatedAt @map("updated_time")
 
+  babyId Int? @map("baby_id")
+  baby Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@unique([babyId, name])
   @@map("exercise_config")
 }
 
@@ -349,4 +368,73 @@ model AiAnalysis {
 
   @@index([babyId, periodStart])
   @@map("ai_analysis")
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REMOVED
+}
+
+model Account {
+  id           Int              @id @default(autoincrement())
+  appId        String           @map("app_id")
+  openId       String           @map("open_id")
+  memberships  BabyMember[]
+  sessions     AccountSession[]
+  webLogins    WebLogin[]
+
+  @@unique([appId, openId])
+  @@map("account")
+}
+
+model BabyMember {
+  accountId Int              @map("account_id")
+  babyId    Int              @map("baby_id")
+  creatorId Int?             @unique @map("creator_id")
+  name      String
+  role      UserRole
+  status    MembershipStatus @default(PENDING)
+  isAdmin   Boolean          @default(false) @map("is_admin")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  creator User?   @relation(fields: [creatorId], references: [id])
+  baby    Baby    @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@id([accountId, babyId])
+  @@index([babyId, status])
+  @@map("baby_member")
+}
+
+model AccountSession {
+  tokenHash String   @id @map("token_hash")
+  accountId Int      @map("account_id")
+  channel   String
+  expiresAt DateTime @map("expires_at")
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("account_session")
+}
+
+model WebLogin {
+  scene       String   @id
+  browserHash String   @map("browser_hash")
+  accountId   Int?     @map("account_id")
+  expiresAt   DateTime @map("expires_at")
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("web_login")
+}
+
+model BabyClaim {
+  babyId    Int      @id @map("baby_id")
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  baby      Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@map("baby_claim")
 }

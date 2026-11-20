@@ -1,0 +1,21 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen" wx:if="{{ready}}">
+  <view class="panel" wx:if="{{!editing}}">
+    <view class="title">你的身份</view>
+    <view class="field"><text class="fieldTitle">显示名称</text><input maxlength="40" value="{{memberName}}" bindinput="setName" placeholder="请输入你的名称" /></view>
+    <view class="field"><text class="fieldTitle">你与宝宝的关系</text><picker range="{{labels}}" bindchange="setRole">{{roleLabel || '请选择'}}</picker></view>
+  </view>
+  <view class="panel">
+    <view class="title">宝宝资料</view>
+    <view class="field" wx:for="{{fields}}" wx:key="key">
+      <text class="fieldTitle">{{item.label}}</text>
+      <input type="{{item.type}}" value="{{values[item.key]}}" data-key="{{item.key}}" bindinput="field" placeholder="{{item.required ? '请输入' : '选填'}}" />
+    </view>
+    <view class="field"><text class="fieldTitle">性别</text><view class="chips">
+      <button class="chip {{gender === 'MALE' ? 'selected' : ''}}" data-value="MALE" bindtap="setGender">男宝</button>
+      <button class="chip {{gender === 'FEMALE' ? 'selected' : ''}}" data-value="FEMALE" bindtap="setGender">女宝</button>
+    </view></view>
+    <view class="field"><text class="fieldTitle">出生日期</text><picker mode="date" end="{{today}}" value="{{birthday}}" bindchange="setBirthday">{{birthday}}</picker></view>
+    <button class="primary section" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">保存</button>
+  </view>
+</view>

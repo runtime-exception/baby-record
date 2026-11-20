@@ -1,0 +1,6 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="panel hero"><view class="heading">宝宝成长记录</view><view class="subtitle muted">添加宝宝，或加入家人已经创建的记录。</view></view>
+  <view class="panel stack"><button class="primary" bindtap="add">添加宝宝</button><button bindtap="bind">绑定已有宝宝</button></view>
+  <button class="plain section" bindtap="logout">退出登录</button>
+</view>

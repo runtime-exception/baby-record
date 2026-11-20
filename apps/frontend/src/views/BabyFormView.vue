@@ -10,7 +10,7 @@ import TypeSegment from '@/components/form/TypeSegment.vue';
 import { babyApi } from '@/api/baby';
 import { useBabyStore } from '@/stores/baby';
 import { isFutureDate } from '@/utils/date-picker';
-import { GENDER_LABELS, type Gender } from '@baby-record/shared';
+import { GENDER_LABELS, USER_ROLE_LABELS, type Gender, type UserRole } from '@baby-record/shared';
 
 const router = useRouter();
 const route = useRoute();
@@ -21,6 +21,8 @@ const isEdit = computed(() => route.name === 'baby-edit');
 const title = computed(() => (isEdit.value ? '编辑宝宝' : '新增宝宝'));
 
 const name = ref('');
+const memberName = ref('');
+const role = ref<UserRole>('DAD');
 const nickname = ref('');
 const gender = ref<Gender>('MALE');
 const birthday = ref(Date.now());
@@ -42,7 +44,7 @@ onMounted(() => {
     name.value = b.name;
     nickname.value = b.nickname || '';
     gender.value = b.gender;
-    birthday.value = new Date(b.birthday).getTime();
+    birthday.value = new Date(b.birthday + 'T00:00:00').getTime();
     birthWeight.value = b.birthWeight;
     birthHeight.value = b.birthHeight;
     headCircumference.value = b.headCircumference;
@@ -51,9 +53,18 @@ onMounted(() => {
   }
 });
 
+function formatLocalDate(value: number) {
+  const day = new Date(value);
+  return [day.getFullYear(), day.getMonth() + 1, day.getDate()].map((part) => String(part).padStart(2, '0')).join('-');
+}
+
 async function onSubmit() {
   if (!name.value.trim()) {
     message.warning('请输入宝宝姓名');
+    return;
+  }
+  if (!isEdit.value && !memberName.value.trim()) {
+    message.warning('请输入你的显示名称');
     return;
   }
   const baby = babyStore.currentBaby;
@@ -63,7 +74,7 @@ async function onSubmit() {
       name: name.value.trim(),
       nickname: nickname.value || undefined,
       gender: gender.value,
-      birthday: new Date(birthday.value).toISOString().slice(0, 10),
+      birthday: formatLocalDate(birthday.value),
       birthWeight: birthWeight.value ?? undefined,
       birthHeight: birthHeight.value ?? undefined,
       headCircumference: headCircumference.value ?? undefined,
@@ -76,7 +87,7 @@ async function onSubmit() {
       await babyStore.loadBabies();
       router.push('/profile');
     } else {
-      const created = await babyApi.create(payload);
+      const created = await babyApi.create({ ...payload, memberName: memberName.value.trim(), role: role.value });
       await babyStore.loadBabies();
       babyStore.setCurrentBaby(created.id);
       message.success('宝宝已添加');
@@ -93,7 +104,15 @@ async function onSubmit() {
 <template>
   <div>
     <AppHeader :title="title" show-back />
-    <div class="px-5 mt-4 space-y-3">
+    <div class="mx-auto max-w-app px-5 mt-4 space-y-3 pb-8">
+      <div v-if="!isEdit" class="space-y-2 rounded-3xl bg-ios-card p-4 shadow-card">
+        <label for="member-name" class="text-sm">你的显示名称</label>
+        <input id="member-name" v-model="memberName" maxlength="40" class="block w-full rounded-xl bg-ios-bg p-2" />
+        <label for="member-role" class="text-sm">你与宝宝的关系</label>
+        <select id="member-role" v-model="role" class="block w-full rounded-xl bg-ios-bg p-2">
+          <option v-for="(label, key) in USER_ROLE_LABELS" :key="key" :value="key">{{ label }}</option>
+        </select>
+      </div>
       <div class="bg-ios-card rounded-3xl p-4 shadow-card">
         <label class="text-sm font-medium text-ios-secondary">姓名</label>
         <AppInput v-model:value="name" placeholder="请输入宝宝姓名" class="mt-2" />

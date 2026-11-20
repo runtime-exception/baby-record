@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "types": [],
+    "strict": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": { "@baby-record/shared": ["../../packages/shared/src/index.ts"] }
+  },
+  "include": ["src/**/*.ts"]
+}

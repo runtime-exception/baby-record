@@ -1,0 +1,17 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="panel">
+    <view class="field"><text class="fieldTitle">宝宝 ID</text><input type="number" data-key="babyId" value="{{babyId}}" bindinput="field" placeholder="输入家人发给你的宝宝 ID" /></view>
+    <view class="field"><text class="fieldTitle">显示名称</text><input maxlength="40" data-key="memberName" value="{{memberName}}" bindinput="field" placeholder="请输入你的名称" /></view>
+    <view class="field"><text class="fieldTitle">你的身份</text><picker range="{{labels}}" bindchange="setRole">{{roleLabel || '请选择'}}</picker></view>
+    <view class="row section"><text>我有旧宝宝认领码</text><switch checked="{{claimMode}}" bindchange="toggleClaim" color="#007aff" /></view>
+    <view class="field" wx:if="{{claimMode}}"><text class="fieldTitle">一次性认领码</text><input maxlength="32" data-key="code" value="{{code}}" bindinput="field" /></view>
+    <button class="primary section" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">{{claimMode ? '认领宝宝' : '提交申请'}}</button>
+  </view>
+  <view class="panel">
+    <view class="row"><view class="title">我的申请</view><button bindtap="refresh">刷新</button></view>
+    <view class="empty" wx:if="{{!applications.length}}">暂无待处理或已关闭的申请</view>
+    <view class="row line" wx:for="{{applications}}" wx:key="babyId"><text>宝宝 {{item.babyId}}</text><text>{{item.label}}</text></view>
+    <button wx:if="{{hasBaby}}" class="section" bindtap="goHome">返回首页</button>
+  </view>
+</view>

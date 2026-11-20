@@ -20,8 +20,9 @@ export const validationSchema = Joi.object({
   SWAGGER_PATH: Joi.string().default('docs'),
   CORS_ORIGIN: Joi.string().default('http://localhost:5173'),
 
-  BABY_RECORD_PASSWORD: Joi.string().min(6).required(),
-  BABY_RECORD_AUTH_SECRET: Joi.string().min(32).optional(),
+  WECHAT_APP_ID: Joi.string().allow("").optional(),
+  WECHAT_APP_SECRET: Joi.string().allow("").optional(),
+  WECHAT_ENV_VERSION: Joi.string().valid("develop", "trial", "release").default("release"),
   BABY_RECORD_SESSION_DAYS: Joi.number().integer().min(1).max(365).default(30),
   BABY_RECORD_COOKIE_SECURE: Joi.boolean().optional(),
 

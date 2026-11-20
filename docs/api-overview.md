@@ -2,18 +2,23 @@
 
 > 全局前缀：`/api/v1`　统一响应：`{ code, message, data }`　Swagger：`/docs`
 
+## 认证与家庭成员
+
+- 微信小程序用 `POST /auth/wechat` 交换临时登录凭证，后续请求携带 `Authorization: Bearer <token>`。Web 在浏览器完成 `/auth/web/start`、`/auth/web/exchange`，由小程序通过 `/auth/web/confirm` 确认，服务端给浏览器写入 HttpOnly Cookie。
+- `POST /family/applications` 提交绑定申请，`GET /family/applications` 查看本人的申请。旧宝宝用 `POST /family/claim` 认领。
+- `GET /family/:babyId/members` 查询家庭成员。管理员用 `PATCH /family/:babyId/members/:accountId` 批准或拒绝申请，用 `DELETE` 移除成员。
+- `/foods`、`/supplement-configs`、`/exercise-configs` 接收 `X-Baby-Id` 指定宝宝。护理记录创建时，后端按已登录账号和宝宝关系确定记录人。
+
 ## 基础模块
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/babies` | 新增宝宝 |
+| POST | `/babies` | 新增宝宝并绑定本人为管理员，填写 `memberName` 和 `role` |
 | PATCH | `/babies/:id` | 修改宝宝 |
-| GET | `/babies` | 宝宝列表 |
+| GET | `/babies` | 本人已绑定的宝宝及对应身份 |
 | GET | `/babies/:id` | 宝宝详情（含年龄/月龄/天数） |
-| POST | `/users` | 新增记录人 |
-| GET | `/users` | 记录人列表 |
-| GET | `/users/:id` | 记录人详情 |
-| PATCH | `/users/:id` | 修改记录人 |
+| POST | `/babies/:id/avatar` | 管理员上传头像，multipart 字段为 `file` |
+| GET | `/babies/:id/avatar` | 已绑定成员读取头像 |
 
 ## 记录域（feeding / diaper / sleep / supplement / activity 结构相同）
 

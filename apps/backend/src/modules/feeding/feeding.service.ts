@@ -40,7 +40,7 @@ export class FeedingService {
 
   async create(dto: CreateFeedingDto): Promise<FeedingVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
-    const foodIds = await this.validateFoods(dto.feedingType, dto.foodIds ?? []);
+    const foodIds = await this.validateFoods(dto.babyId, dto.feedingType, dto.foodIds ?? []);
     const components = resolveFeedingComponents(dto.feedingType, dto.components, foodIds);
     const feeding = await this.prisma.feeding.create({
       data: {
@@ -64,6 +64,7 @@ export class FeedingService {
     const feedingType = dto.feedingType ?? existing.feedingType;
     const requestedFoodIds = dto.foodIds ?? existing.foods.map((item) => item.foodId);
     const foodIds = await this.validateFoods(
+      existing.babyId,
       feedingType,
       requestedFoodIds,
       existing.foods.map((item) => item.foodId),
@@ -157,6 +158,7 @@ export class FeedingService {
   }
 
   private async validateFoods(
+    babyId: number,
     feedingType: FeedingType,
     requestedFoodIds: number[],
     existingFoodIds: number[] = [],
@@ -172,6 +174,7 @@ export class FeedingService {
     if (!requestedFoodIds.length) return [];
     const count = await this.prisma.food.count({
       where: {
+        babyId,
         id: { in: requestedFoodIds },
         OR: [{ isActive: true }, { id: { in: existingFoodIds } }],
       },

@@ -540,3 +540,49 @@ export interface CurrentUser {
   name: string;
   role: UserRole;
 }
+
+export interface BabyMembership {
+  creatorId: number;
+  role: UserRole;
+  name: string;
+  isAdmin: boolean;
+}
+
+export interface MemberBaby extends BabyVo {
+  membership: BabyMembership;
+}
+
+export type MembershipStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REMOVED';
+
+export interface FamilyMember {
+  accountId: number;
+  name: string;
+  role: UserRole;
+  isAdmin: boolean;
+  status: MembershipStatus;
+  updatedAt: string;
+}
+
+export interface FamilyApplication {
+  babyId: number;
+  name: string;
+  role: UserRole;
+  status: Exclude<MembershipStatus, 'APPROVED'>;
+  updatedAt: string;
+}
+
+export function feedingTypeForComponents(components: FeedingComponent[]): FeedingType {
+  return components.length > 1 ? 'MIXED' : components[0];
+}
+
+export function componentsForFeeding(record: {
+  feedingType: FeedingType;
+  components?: FeedingComponent[];
+  foods: { id: number }[];
+}): FeedingComponent[] {
+  if (record.components?.length) return record.components;
+  if (record.feedingType === 'MIXED') {
+    return ['BREAST_MILK', 'FORMULA', ...(record.foods.length ? ['COMPLEMENTARY_FOOD' as const] : [])];
+  }
+  return [record.feedingType];
+}

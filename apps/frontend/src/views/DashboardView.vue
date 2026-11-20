@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mediaUrl } from '@/utils/request';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBabyStore } from '@/stores/baby';
@@ -207,7 +208,7 @@ const feedingAdvice = computed(() => {
         <div
           class="w-14 h-14 shrink-0 rounded-full bg-gradient-to-br from-ios-blue to-ios-teal flex items-center justify-center text-3xl shadow-soft"
         >
-          <img v-if="baby.avatar" :src="baby.avatar" alt="宝宝头像" class="w-full h-full rounded-full object-cover" />
+          <img v-if="baby.avatar" :src="mediaUrl(baby.avatar)" alt="宝宝头像" class="w-full h-full rounded-full object-cover" />
           <template v-else>👶</template>
         </div>
         <div class="min-w-0">

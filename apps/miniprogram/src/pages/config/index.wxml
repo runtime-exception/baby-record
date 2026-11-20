@@ -1,0 +1,29 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="row"><view class="title">{{title}}</view><button class="primary" data-id="0" bindtap="edit">添加</button></view>
+  <view class="panel">
+    <view class="row"><text>仅显示启用项</text><switch checked="{{onlyActive}}" color="#007aff" bindchange="activeFilter" /></view>
+    <view class="error" wx:if="{{error}}">{{error}}</view><view class="empty" wx:if="{{!items.length && !error}}">暂无配置</view>
+    <block wx:for="{{items}}" wx:key="id">
+      <view wx:if="{{!onlyActive || item.isActive}}" class="row recordRow">
+        <view><view>{{item.emoji}} {{item.name}}</view><view class="muted">{{item.defaultAmount}} {{item.defaultUnit}}{{item.isActive ? '' : ' · 已停用'}}</view></view>
+        <view class="row"><button data-id="{{item.id}}" bindtap="edit">编辑</button><button class="{{item.isActive ? 'danger' : ''}}" data-id="{{item.id}}" bindtap="changeActive">{{item.isActive ? '停用' : '启用'}}</button></view>
+      </view>
+    </block>
+  </view>
+  <view wx:if="{{editing >= 0}}" class="sheetBackdrop" bindtap="close">
+    <scroll-view scroll-y class="sheet panel" catchtap="sheetTap">
+      <view class="row"><view class="title">{{editing ? '编辑' : '添加'}}</view><button bindtap="close">取消</button></view>
+      <view class="field"><text class="fieldTitle">名称</text><input value="{{name}}" data-key="name" bindinput="field" /></view>
+      <view class="field"><text class="fieldTitle">图标</text><input value="{{emoji}}" data-key="emoji" bindinput="field" placeholder="可留空" /><view class="chips">
+        <button wx:for="{{emojiOptions}}" wx:key="*this" class="chip {{emoji === item ? 'selected' : ''}}" data-value="{{item}}" bindtap="icon">{{item}}</button>
+      </view></view>
+      <view wx:if="{{kind !== 'foods'}}" class="row field">
+        <input type="{{kind === 'exercise-configs' ? 'digit' : 'text'}}" value="{{defaultAmount}}" data-key="defaultAmount" bindinput="field" placeholder="默认数量" />
+        <picker wx:if="{{kind === 'exercise-configs'}}" range="{{unitOptions}}" bindchange="unit">{{defaultUnit}}</picker>
+        <input wx:else value="{{defaultUnit}}" data-key="defaultUnit" bindinput="field" placeholder="默认单位" />
+      </view>
+      <button class="primary section" disabled="{{busy}}" loading="{{busy}}" bindtap="save">保存</button>
+    </scroll-view>
+  </view>
+</view>

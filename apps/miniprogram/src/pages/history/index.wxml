@@ -1,0 +1,39 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="heading">记录</view><view class="subtitle">宝宝的日常护理记录</view>
+  <view class="panel"><view class="title">新增记录</view><view class="chips">
+    <button wx:for="{{quick}}" wx:key="kind" data-kind="{{item.kind}}" bindtap="create">{{item.icon}} {{item.label}}</button>
+    <button data-kind="other" bindtap="create">✨ 其他</button>
+  </view></view>
+  <view class="panel">
+    <view class="row"><view class="title">历史记录</view><view class="chips" style="margin-top:0">
+      <button class="chip {{mode === 'day' ? 'selected' : ''}}" data-mode="day" bindtap="changeMode">按天</button>
+      <button class="chip {{mode === 'range' ? 'selected' : ''}}" data-mode="range" bindtap="changeMode">日期范围</button>
+    </view></view>
+    <view class="row field">
+      <picker class="inlinePicker" mode="date" value="{{startDate}}" end="{{today}}" data-field="start" bindchange="chooseDate">{{startDate}}</picker>
+      <picker wx:if="{{mode === 'range'}}" class="inlinePicker" mode="date" value="{{endDate}}" start="{{startDate}}" end="{{today}}" data-field="end" bindchange="chooseDate">{{endDate}}</picker>
+    </view>
+    <view class="chips">
+      <button class="chip {{selected === 'all' ? 'selected' : ''}}" data-kind="all" bindtap="chooseFilter">全部</button>
+      <button wx:for="{{filters}}" wx:key="kind" class="chip {{selected === item.kind ? 'selected' : ''}}" data-kind="{{item.kind}}" bindtap="chooseFilter">{{item.label}}</button>
+    </view>
+    <view class="empty" wx:if="{{loading}}">加载中…</view>
+    <button class="error" wx:elif="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+    <view class="empty" wx:elif="{{!filtered.length}}">暂无记录</view>
+    <view wx:else wx:for="{{filtered}}" wx:key="key" class="row recordRow" data-key="{{item.key}}" bindtap="view">
+      <view><view>{{item.icon}} {{item.label}}</view><view class="muted">{{item.detail}} {{item.creator}}</view></view>
+      <view class="muted">{{mode === 'range' ? item.date + ' ' : ''}}{{item.time}}</view>
+    </view>
+  </view>
+  <view wx:if="{{detail}}" class="sheetBackdrop" bindtap="close">
+    <view class="sheet panel" catchtap="viewSheet">
+      <view class="row"><view class="title">{{detail.icon}} {{detail.label}}</view><button bindtap="close">关闭</button></view>
+      <view class="line">{{detail.date}} {{detail.time}}</view>
+      <view class="line" wx:if="{{detail.detail}}">{{detail.detail}}</view>
+      <view class="line" wx:if="{{detail.creator}}">添加人 {{detail.creator}}</view>
+      <view class="line" wx:if="{{detail.remark}}">备注 {{detail.remark}}</view>
+      <view class="row section"><button bindtap="edit">编辑</button><button class="danger" bindtap="remove">删除</button></view>
+    </view>
+  </view>
+</view>

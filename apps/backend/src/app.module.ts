@@ -4,7 +4,8 @@ import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { BabyModule } from './modules/baby/baby.module';
-import { UserModule } from './modules/user/user.module';
+import { FamilyController } from './modules/family/family.controller';
+import { FamilyService } from './modules/family/family.service';
 import { FeedingModule } from './modules/feeding/feeding.module';
 import { DiaperModule } from './modules/diaper/diaper.module';
 import { SleepModule } from './modules/sleep/sleep.module';
@@ -24,6 +25,8 @@ import { ExerciseConfigModule } from './modules/exercise-config/exercise-config.
 import { SupplementConfigModule } from './modules/supplement-config/supplement-config.module';
 
 @Module({
+  controllers: [FamilyController],
+  providers: [FamilyService],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -35,7 +38,6 @@ import { SupplementConfigModule } from './modules/supplement-config/supplement-c
     AuthModule,
     // 基础
     BabyModule,
-    UserModule,
     // 记录域
     FeedingModule,
     DiaperModule,

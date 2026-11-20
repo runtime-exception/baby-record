@@ -1,29 +1,90 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { PATH_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/enums/error-code.enum';
+import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { FamilyRequest, canAccessBaby, positiveId } from './family-scope';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly authService: AuthService,
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) return true;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const controller = context.getClass();
+    const handler = context.getHandler();
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [handler, controller])) return true;
 
-    const request = context.switchToHttp().getRequest<Request>();
-    if (!this.authService.isAuthenticated(request)) {
-      throw new BusinessException(ErrorCode.UNAUTHORIZED, '登录已过期，请重新登录');
+    const request = context.switchToHttp().getRequest<FamilyRequest>();
+    const session = await this.auth.getSession(request);
+    if (!session) throw new BusinessException(ErrorCode.UNAUTHORIZED, '登录已过期，请重新登录');
+    request.accountId = session.accountId;
+    request.channel = session.channel;
+
+    const route = this.reflector.get<string>(PATH_METADATA, controller);
+    const path = this.reflector.get<string>(PATH_METADATA, handler);
+    const { method, body, params, query } = request;
+    if (route === 'auth' || route === 'family') return true;
+
+    const recordLookup: Record<string, (id: number) => Promise<{ babyId: number } | null>> = {
+      feedings: (id) => this.prisma.feeding.findUnique({ where: { id }, select: { babyId: true } }),
+      diapers: (id) => this.prisma.diaper.findUnique({ where: { id }, select: { babyId: true } }),
+      sleeps: (id) => this.prisma.sleep.findUnique({ where: { id }, select: { babyId: true } }),
+      activities: (id) => this.prisma.activity.findUnique({ where: { id }, select: { babyId: true } }),
+      temperatures: (id) => this.prisma.temperature.findUnique({ where: { id }, select: { babyId: true } }),
+      growths: (id) => this.prisma.growthRecord.findUnique({ where: { id }, select: { babyId: true } }),
+      supplements: (id) => this.prisma.supplement.findUnique({ where: { id }, select: { babyId: true } }),
+      'food-allergies': (id) => this.prisma.foodAllergyRecord.findUnique({ where: { id }, select: { babyId: true } }),
+    };
+    const configuration = ['foods', 'supplement-configs', 'exercise-configs'];
+    const aggregates = ['dashboard', 'intervals', 'records', 'statistics', 'charts'];
+    let babyId: number;
+    let admin = false;
+    let assignCreator = false;
+
+    if (route === 'babies') {
+      if (path === '/' && (method === 'POST' || method === 'GET')) return true;
+      babyId = positiveId(params.id);
+      admin = method !== 'GET';
+    } else if (configuration.includes(route)) {
+      babyId = positiveId(request.get('x-baby-id'));
+    } else if (Object.prototype.hasOwnProperty.call(recordLookup, route)) {
+      if (path.startsWith(':id')) {
+        const record = await recordLookup[route](positiveId(params.id));
+        if (!record) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
+        babyId = record.babyId;
+      } else if (method === 'POST') {
+        babyId = positiveId(body?.babyId);
+        assignCreator = true;
+      } else {
+        babyId = positiveId(query.babyId);
+      }
+    } else if (aggregates.includes(route)) {
+      babyId = positiveId(query.babyId);
+    } else {
+      throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
     }
+
+    const member = await this.prisma.babyMember.findUnique({
+      where: { accountId_babyId: { accountId: request.accountId, babyId } },
+      select: { status: true, isAdmin: true, creatorId: true },
+    });
+    if (!canAccessBaby(member, admin) || (assignCreator && !member?.creatorId)) {
+      throw new BusinessException(route === 'babies' || !params.id ? ErrorCode.BABY_NOT_FOUND : ErrorCode.RECORD_NOT_FOUND);
+    }
+
+    if (params.id && Object.prototype.hasOwnProperty.call(recordLookup, route)
+      && body && (body.babyId !== undefined || body.creatorId !== undefined)) {
+      throw new BusinessException(ErrorCode.PARAM_INVALID, '不能修改记录归属或记录人');
+    }
+    request.babyId = babyId;
+    if (assignCreator) body.creatorId = member!.creatorId;
     return true;
   }
 }

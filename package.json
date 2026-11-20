@@ -9,6 +9,8 @@
     "dev:frontend": "pnpm --filter @baby-record/frontend dev",
     "dev:backend": "pnpm --filter @baby-record/backend start:dev",
     "build:frontend": "pnpm --filter @baby-record/frontend build",
+    "test:miniprogram": "pnpm build:miniprogram && node --test apps/miniprogram/test/smoke.cjs",
+    "build:miniprogram": "tsc -p apps/miniprogram/tsconfig.json && node apps/miniprogram/build.mjs",
     "build:backend": "pnpm --filter @baby-record/backend build",
     "lint": "pnpm -r lint"
   },

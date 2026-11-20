@@ -1,0 +1,14 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="panel" wx:if="{{!members.length}}">暂无成员</view>
+  <view class="panel" wx:for="{{members}}" wx:key="accountId">
+    <view class="row"><view class="title">{{item.name}} · {{item.roleLabel}}</view><text class="muted">{{item.isAdmin ? '管理员' : item.status === 'PENDING' ? '等待审批' : '成员'}}</text></view>
+    <view class="chips" wx:if="{{admin && !item.isAdmin}}">
+      <block wx:if="{{item.status === 'PENDING'}}">
+        <button disabled="{{busy}}" data-account="{{item.accountId}}" data-status="APPROVED" bindtap="change">批准</button>
+        <button class="danger" disabled="{{busy}}" data-account="{{item.accountId}}" data-status="REJECTED" bindtap="change">拒绝</button>
+      </block>
+      <button wx:else class="danger" disabled="{{busy}}" data-account="{{item.accountId}}" data-status="REMOVED" bindtap="change">移除</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,49 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="heading">我的</view><view class="subtitle">宝宝档案与设置</view>
+  <button class="error" wx:if="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+  <block wx:if="{{baby}}">
+    <view class="panel hero">
+      <view class="row">
+        <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" bindtap="chooseAvatar" />
+        <view wx:else class="avatar" bindtap="chooseAvatar">👶</view>
+        <view style="flex:1"><view class="title">{{baby.name}}</view><view class="muted">{{baby.nickname}} {{gender}}</view></view>
+        <button wx:if="{{baby.membership.isAdmin}}" bindtap="edit">编辑</button>
+      </view>
+      <view class="value section">{{baby.age.totalMonths}} <text style="font-size:26rpx">个月 {{baby.age.days}} 天</text></view>
+      <view class="muted">出生 {{baby.birthday}} · 共 {{baby.age.totalDays}} 天</view>
+    </view>
+    <view class="panel" wx:if="{{list.length > 1}}"><view class="title">切换宝宝</view><view class="chips">
+      <button class="chip {{item.id === baby.id ? 'selected' : ''}}" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="chooseBaby">{{item.nickname || item.name}}</button>
+    </view></view>
+    <view class="panel stack">
+      <view class="row"><view><view class="title">{{baby.membership.name}}</view><view class="muted">{{role}}{{baby.membership.isAdmin ? ' · 管理员' : ''}}</view></view><button bindtap="members">家庭成员</button></view>
+      <view class="row line"><text>宝宝 ID {{baby.id}}</text><button bindtap="copyId">复制</button></view>
+      <view class="row line"><button bindtap="add">添加宝宝</button><button bindtap="bind">绑定宝宝</button><button wx:if="{{baby.membership.isAdmin}}" bindtap="chooseAvatar">换头像</button></view>
+    </view>
+    <view class="panel"><view class="title">记录配置</view>
+      <view wx:for="{{config}}" wx:key="kind" class="row recordRow" data-kind="{{item.kind}}" bindtap="openConfig"><view>{{item.icon}} {{item.label}}<view class="muted">{{item.tip}}</view></view><text>›</text></view>
+    </view>
+    <view class="panel">
+      <view class="title">外观</view>
+      <view class="field"><view class="muted">界面主题</view><view class="chips">
+        <button class="chip {{appearance.theme === 'ios' ? 'selected' : ''}}" data-value="ios" bindtap="changeTheme">iOS</button>
+        <button class="chip {{appearance.theme === 'material' ? 'selected' : ''}}" data-value="material" bindtap="changeTheme">Material</button>
+      </view></view>
+      <view class="field"><view class="muted">明暗模式</view><view class="chips">
+        <button class="chip {{appearance.mode === 'light' ? 'selected' : ''}}" data-value="light" bindtap="changeMode">浅色</button>
+        <button class="chip {{appearance.mode === 'dark' ? 'selected' : ''}}" data-value="dark" bindtap="changeMode">深色</button>
+        <button class="chip {{appearance.mode === 'auto' ? 'selected' : ''}}" data-value="auto" bindtap="changeMode">跟随系统</button>
+      </view></view>
+      <view class="row line"><text>老年人模式</text><switch checked="{{appearance.senior}}" color="#007aff" bindchange="senior" /></view>
+    </view>
+    <view class="panel"><view class="title">出生信息</view>
+      <view class="row line"><text>体重</text><text>{{baby.birthWeight || '—'}} kg</text></view>
+      <view class="row line"><text>身高</text><text>{{baby.birthHeight || '—'}} cm</text></view>
+      <view class="row line"><text>头围</text><text>{{baby.headCircumference || '—'}} cm</text></view>
+      <view class="row line"><text>出生医院</text><text>{{baby.birthHospital || '—'}}</text></view>
+      <view class="row line"><text>备注</text><text>{{baby.remark || '—'}}</text></view>
+    </view>
+  </block>
+  <button class="danger section" bindtap="logout">退出登录</button>
+</view>

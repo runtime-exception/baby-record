@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { authApi } from '@/api/auth';
+import { useBabyStore } from './baby';
 
 export const useAuthStore = defineStore('auth', () => {
   const authenticated = ref(false);
@@ -29,17 +30,18 @@ export const useAuthStore = defineStore('auth', () => {
     return checking.value;
   }
 
-  async function login(password: string) {
-    const result = await authApi.login(password);
-    authenticated.value = result.authenticated;
+  function acceptLogin() {
+    useBabyStore().clear();
+    authenticated.value = true;
     checked.value = true;
   }
 
   async function logout() {
     await authApi.logout();
+    useBabyStore().clear();
     authenticated.value = false;
     checked.value = true;
   }
 
-  return { authenticated, checked, isAuthenticated, ensureChecked, login, logout };
+  return { authenticated, checked, isAuthenticated, ensureChecked, acceptLogin, logout };
 });

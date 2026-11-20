@@ -1,5 +1,5 @@
 import { http } from '@/utils/request';
-import type { BabyVo } from '@baby-record/shared';
+import type { BabyVo, MemberBaby, UserRole } from '@baby-record/shared';
 import type { Gender } from '@baby-record/shared';
 
 export interface CreateBabyPayload {
@@ -12,12 +12,16 @@ export interface CreateBabyPayload {
   headCircumference?: number;
   birthHospital?: string;
   remark?: string;
-  avatar?: string;
 }
 
 export const babyApi = {
-  list: () => http.get<BabyVo[]>('/babies'),
+  list: () => http.get<MemberBaby[]>('/babies'),
   detail: (id: number) => http.get<BabyVo>(`/babies/${id}`),
-  create: (data: CreateBabyPayload) => http.post<BabyVo>('/babies', data),
+  create: (data: CreateBabyPayload & { memberName: string; role: UserRole }) => http.post<BabyVo>('/babies', data),
+  uploadAvatar: (id: number, file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    return http.post<BabyVo>(`/babies/${id}/avatar`, body);
+  },
   update: (id: number, data: Partial<CreateBabyPayload>) => http.patch<BabyVo>(`/babies/${id}`, data),
 };

@@ -1,0 +1,14 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="panel center">
+    <view class="title">{{approved ? '已确认网页登录' : '确认网页登录'}}</view>
+    <block wx:if="{{code && !approved}}">
+      <view class="value section">{{code}}</view>
+      <view class="muted">请核对网页显示的确认码。确认后，该浏览器可查看你已绑定的宝宝。</view>
+      <button class="section primary" loading="{{busy}}" disabled="{{busy}}" bindtap="approve">确认登录</button>
+    </block>
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <view class="muted section" wx:if="{{approved}}">请返回浏览器继续</view>
+    <button class="section" bindtap="finish">{{approved || error ? '返回首页' : '取消'}}</button>
+  </view>
+</view>

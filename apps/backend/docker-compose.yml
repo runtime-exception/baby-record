@@ -2,7 +2,7 @@
 #
 # 模式 A（开箱即用，推荐快速体验）：
 #   docker-compose up -d --build
-#   内置 PostgreSQL 自动建表（挂载 docs/schema.sql），应用连接内置数据库。
+#   应用启动时执行 Prisma 迁移，连接内置 PostgreSQL。
 #
 # 模式 B（连接外部 PostgreSQL）：
 #   注释掉 postgres 服务与 depends_on，并将 app.environment 中的数据库连接改为外部地址，
@@ -21,7 +21,11 @@ services:
       - "3308:5432"
     volumes:
       - baby-pgdata:/var/lib/postgresql/data
-      - ../../docs/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-baby_record} -d ${DATABASE_NAME:-baby_record}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   app:
     build: .
@@ -34,7 +38,9 @@ services:
       - APP_PORT=3000
       - API_PREFIX=api/v1
       - SWAGGER_PATH=docs
-      - BABY_RECORD_PASSWORD=${BABY_RECORD_PASSWORD:?BABY_RECORD_PASSWORD is required}
+      - WECHAT_APP_ID=${WECHAT_APP_ID:-}
+      - WECHAT_APP_SECRET=${WECHAT_APP_SECRET:-}
+      - WECHAT_ENV_VERSION=${WECHAT_ENV_VERSION:-release}
       - BABY_RECORD_SESSION_DAYS=${BABY_RECORD_SESSION_DAYS:-30}
       - BABY_RECORD_COOKIE_SECURE=${BABY_RECORD_COOKIE_SECURE:-false}
       - DATABASE_HOST=postgres
@@ -42,9 +48,10 @@ services:
       - DATABASE_NAME=${DATABASE_NAME:-baby_record}
       - DATABASE_USERNAME=${DATABASE_USERNAME:-baby_record}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-change-this-database-password}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://baby_record:change-this-database-password@postgres:5432/baby_record?schema=public}
+      - DATABASE_URL=${DATABASE_URL:-}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
 volumes:
   baby-pgdata:

@@ -47,7 +47,7 @@ export class FoodAllergyService {
 
   async update(id: number, dto: UpdateFoodAllergyDto) {
     const existing = await this.findRecord(id);
-    if (dto.foodId !== undefined) await this.ensureFood(dto.foodId);
+    if (dto.foodId !== undefined) await this.ensureFood(existing.babyId, dto.foodId);
     const observations = (dto.observations ?? existing.observations) as FoodAllergyObservations;
     const result = scoreAllergyObservations(observations);
     const record = await this.prisma.foodAllergyRecord.update({
@@ -111,11 +111,11 @@ export class FoodAllergyService {
     ]);
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     if (!user) throw new BusinessException(ErrorCode.USER_NOT_FOUND);
-    await this.ensureFood(foodId);
+    await this.ensureFood(babyId, foodId);
   }
 
-  private async ensureFood(foodId: number) {
-    const food = await this.prisma.food.findFirst({ where: { id: foodId, isActive: true }, select: { id: true } });
+  private async ensureFood(babyId: number, foodId: number) {
+    const food = await this.prisma.food.findFirst({ where: { id: foodId, babyId, isActive: true }, select: { id: true } });
     if (!food) throw new BusinessException(ErrorCode.PARAM_INVALID, '辅食不存在或已停用');
   }
 

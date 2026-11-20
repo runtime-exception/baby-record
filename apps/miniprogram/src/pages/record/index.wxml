@@ -1,0 +1,82 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen">
+  <view class="panel" wx:if="{{parent === 'other'}}">
+    <view class="title">其他记录</view>
+    <view class="chips"><button wx:for="{{other}}" wx:key="label" data-index="{{index}}" disabled="{{busy || !ready}}" bindtap="chooseOther">{{item.label}}</button></view>
+  </view>
+  <button wx:if="{{error}}" class="error" bindtap="retry">{{error}} · 点击重试</button>
+  <view class="empty" wx:elif="{{!ready}}">正在加载表单…</view>
+  <block wx:if="{{ready}}">
+    <view class="panel" wx:if="{{kind === 'sleep' && !recordId}}">
+      <view class="title">睡眠记录</view>
+      <view class="chips"><button class="chip {{sleepMode === 'quick' ? 'selected' : ''}}" data-key="sleepMode" data-value="quick" bindtap="pickValue">即时记录</button>
+      <button class="chip {{sleepMode === 'custom' ? 'selected' : ''}}" data-key="sleepMode" data-value="custom" bindtap="pickValue">补记睡眠</button></view>
+      <view wx:if="{{sleepMode === 'quick'}}">
+        <view class="chips"><button class="chip {{type === item.value ? 'selected' : ''}}" wx:for="{{typeOptions}}" wx:key="value" data-key="type" data-value="{{item.value}}" bindtap="pickValue">{{item.label}}</button></view>
+        <view wx:if="{{ongoing}}" class="field">正在睡觉 · 开始于 {{ongoing.startTime}}</view>
+        <button class="primary section" disabled="{{busy}}" data-action="{{ongoing ? 'end' : 'start'}}" bindtap="sleepAction">{{ongoing ? '结束睡眠' : '开始睡眠'}}</button>
+        <view class="chips" wx:if="{{!ongoing}}"><button wx:for="{{presets}}" wx:key="*this" data-action="preset" data-minutes="{{item}}" disabled="{{busy}}" bindtap="sleepAction">小睡 {{item}} 分钟</button></view>
+      </view>
+    </view>
+    <view wx:if="{{kind !== 'sleep' || recordId || sleepMode === 'custom'}}" class="panel">
+      <view wx:if="{{kind === 'feeding'}}">
+        <view class="title">喂养类型</view>
+        <view class="chips"><button class="chip {{item.selected ? 'selected' : ''}}" wx:for="{{componentChoices}}" wx:key="value" data-value="{{item.value}}" bindtap="toggleComponent">{{item.label}}</button></view>
+        <view class="field" wx:if="{{isMilk}}"><text class="fieldTitle">喂养量（ml）</text><input type="number" data-key="amountMl" value="{{amountMl}}" bindinput="field" /></view>
+        <view class="field" wx:if="{{recordId}}"><text class="fieldTitle">时长（分钟）</text><input type="number" data-key="durationMinutes" value="{{durationMinutes}}" bindinput="field" /></view>
+        <view class="field" wx:if="{{hasFood}}"><text class="fieldTitle">选择辅食</text><view class="chips">
+          <button class="chip {{item.selected ? 'selected' : ''}}" wx:for="{{foodChoices}}" wx:key="id" data-key="foodIds" data-value="{{item.id}}" bindtap="toggleItem">{{item.emoji}} {{item.name}}</button>
+        </view><view wx:if="{{!foodChoices.length}}" class="muted">请在「我的 → 辅食管理」添加</view></view>
+      </view>
+      <view wx:if="{{kind === 'diaper' || kind === 'sleep'}}">
+        <view class="title">{{kind === 'sleep' ? '睡眠类型' : '纸尿裤类型'}}</view>
+        <view class="chips"><button class="chip {{type === item.value ? 'selected' : ''}}" wx:for="{{typeOptions}}" wx:key="value" data-key="type" data-value="{{item.value}}" bindtap="pickValue">{{item.label}}</button></view>
+      </view>
+      <view wx:if="{{kind === 'temperature'}}"><view class="title">体温（℃）</view><input class="field" type="digit" data-key="temperature" value="{{temperature}}" bindinput="field" /></view>
+      <view wx:if="{{kind === 'supplement'}}">
+        <view class="title">补剂</view><picker class="field" range="{{supplementNames}}" bindchange="chooseSupplement">{{name || '选择补剂'}}</picker>
+        <view class="row field"><input data-key="amount" value="{{amount}}" placeholder="剂量" bindinput="field" /><input data-key="unit" value="{{unit}}" placeholder="单位" bindinput="field" /></view>
+      </view>
+      <view wx:if="{{kind === 'activity'}}">
+        <view class="title">{{eventType}}</view>
+        <view wx:if="{{eventType === '运动'}}">
+          <view class="chips"><button class="chip {{item.selected ? 'selected' : ''}}" wx:for="{{exerciseChoices}}" wx:key="id" data-key="exerciseTypes" data-value="{{item.name}}" bindtap="toggleItem">{{item.emoji}} {{item.name}}</button></view>
+          <view class="row field"><input type="digit" data-key="amount" value="{{amount}}" placeholder="数量" bindinput="field" /><text>{{unit}}</text></view>
+        </view>
+        <view class="field"><text class="fieldTitle">描述</text><input data-key="description" value="{{description}}" bindinput="field" /></view>
+      </view>
+      <view wx:if="{{kind === 'growth'}}">
+        <view class="title">成长测量</view>
+        <view class="field" wx:if="{{metric !== 'weight'}}"><text class="fieldTitle">身高（cm）</text><input type="digit" data-key="height" value="{{height}}" bindinput="field" /></view>
+        <view class="field" wx:if="{{metric !== 'height'}}"><text class="fieldTitle">体重（kg）</text><input type="digit" data-key="weight" value="{{weight}}" bindinput="field" /></view>
+        <view class="field" wx:if="{{recordId}}"><text class="fieldTitle">头围（cm）</text><input type="digit" data-key="headCircumference" value="{{headCircumference}}" bindinput="field" /></view>
+      </view>
+      <view wx:if="{{kind === 'foodAllergy'}}"><view class="title">辅食排敏</view><picker class="field" range="{{foodOptions}}" bindchange="chooseFood">{{foodName || '选择辅食'}}</picker></view>
+      <view class="field">
+        <text class="fieldTitle">{{kind === 'sleep' ? '开始时间' : '记录时间'}}</text>
+        <view class="row"><picker class="inlinePicker" mode="date" value="{{date}}" end="{{today}}" data-key="date" bindchange="field">{{date}}</picker>
+          <picker class="inlinePicker" mode="time" value="{{time}}" data-key="time" bindchange="field">{{time}}</picker></view>
+      </view>
+      <view class="field" wx:if="{{kind === 'sleep' && sleepMode === 'custom'}}">
+        <text class="fieldTitle">结束时间</text>
+        <view class="row"><picker class="inlinePicker" mode="date" value="{{endDate}}" end="{{today}}" data-key="endDate" bindchange="field">{{endDate}}</picker>
+          <picker class="inlinePicker" mode="time" value="{{endTime}}" data-key="endTime" bindchange="field">{{endTime}}</picker></view>
+      </view>
+      <view wx:if="{{kind === 'foodAllergy'}}">
+        <view class="field line" wx:for="{{symptoms}}" wx:for-item="symptom" wx:key="key">
+          <text>{{symptom.label}}</text><view class="muted">{{symptom.window}}</view>
+          <view class="chips"><button class="chip {{observations[symptom.key] === item.value ? 'selected' : ''}}" wx:for="{{observationStates}}" wx:key="value" data-key="{{symptom.key}}" data-value="{{item.value}}" bindtap="observe">{{item.label}}</button></view>
+        </view>
+        <view class="section title">系统建议 · {{suggested}}</view>
+        <view wx:if="{{urgent}}" class="error">观察到需要及时就医的症状</view>
+        <view class="section">最终结论</view><view class="chips"><button class="chip {{finalConclusion === item.value ? 'selected' : ''}}" wx:for="{{conclusionLabels}}" wx:key="value" data-key="finalConclusion" data-value="{{item.value}}" bindtap="pickValue">{{item.label}}</button></view>
+      </view>
+      <view class="field"><text class="fieldTitle">备注</text><textarea data-key="remark" value="{{remark}}" placeholder="选填" bindinput="field" /></view>
+      <view wx:if="{{kind === 'feeding' && !recordId}}" class="field">
+        <view class="row"><text>同时记录补剂</text><switch checked="{{includeSupplements}}" color="#007aff" bindchange="toggleSupplements" /></view>
+        <view class="chips" wx:if="{{includeSupplements}}"><button class="chip {{item.selected ? 'selected' : ''}}" wx:for="{{supplementChoices}}" wx:key="id" data-key="supplementIds" data-value="{{item.id}}" bindtap="toggleItem">{{item.emoji}} {{item.name}}</button></view>
+      </view>
+      <button class="primary section" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">保存记录</button>
+    </view>
+  </block>
+</view>

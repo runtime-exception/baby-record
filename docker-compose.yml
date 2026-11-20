@@ -17,9 +17,11 @@ services:
       - APP_PORT=3000
       - API_PREFIX=api/v1
       - SWAGGER_PATH=docs
-      - BABY_RECORD_PASSWORD=${BABY_RECORD_PASSWORD:?BABY_RECORD_PASSWORD is required}
+      - WECHAT_APP_ID=${WECHAT_APP_ID:-}
+      - WECHAT_APP_SECRET=${WECHAT_APP_SECRET:-}
+      - WECHAT_ENV_VERSION=${WECHAT_ENV_VERSION:-release}
       - BABY_RECORD_SESSION_DAYS=${BABY_RECORD_SESSION_DAYS:-30}
-      - BABY_RECORD_COOKIE_SECURE=${BABY_RECORD_COOKIE_SECURE:-false}
+      - BABY_RECORD_COOKIE_SECURE=${BABY_RECORD_COOKIE_SECURE:-true}
       - DATABASE_HOST=${DATABASE_HOST:?DATABASE_HOST is required}
       - DATABASE_PORT=${DATABASE_PORT:-3308}
       - DATABASE_NAME=${DATABASE_NAME:-baby-db}
@@ -45,7 +47,6 @@ services:
   #     - "3308:5432"
   #   volumes:
   #     - baby-pgdata:/var/lib/postgresql/data
-  #     - ./docs/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
   #   healthcheck:
   #     test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-baby_record} -d ${DATABASE_NAME:-baby-db}"]
   #     interval: 3s

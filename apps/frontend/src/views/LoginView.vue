@@ -1,74 +1,86 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { authApi, type WebChallenge } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
-import { useUserStore } from '@/stores/user';
 
-const route = useRoute();
 const router = useRouter();
-const authStore = useAuthStore();
-const userStore = useUserStore();
-const password = ref('');
-const error = ref('');
-const submitting = ref(false);
+const route = useRoute();
+const auth = useAuthStore();
+const challenge = ref<WebChallenge | null>(null);
+const loading = ref(false);
+const status = ref('');
+let timer: ReturnType<typeof setTimeout> | undefined;
+let generation = 0;
 
-async function submit() {
-  if (!password.value) {
-    error.value = '请输入访问密码';
-    return;
-  }
-  submitting.value = true;
-  error.value = '';
+function stop() {
+  clearTimeout(timer);
+  generation++;
+}
+
+async function cancel() {
+  const scene = challenge.value?.scene;
+  stop();
+  challenge.value = null;
+  if (scene) await authApi.cancel(scene).catch(() => {});
+}
+
+async function start() {
+  if (loading.value) return;
+  loading.value = true;
+  await cancel();
+  status.value = '';
+  const current = generation;
   try {
-    await authStore.login(password.value);
-    const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
-      ? route.query.redirect
-      : userStore.hasIdentity ? '/' : '/onboarding';
-    await router.replace(redirect);
-  } catch (cause: any) {
-    error.value = cause?.response?.data?.message || '登录失败，请稍后重试';
-    password.value = '';
+    const next = await authApi.start();
+    if (current !== generation) {
+      void authApi.cancel(next.scene).catch(() => {});
+      return;
+    }
+    challenge.value = next;
+    const expiry = Date.now() + next.expiresIn * 1000;
+    async function poll() {
+      if (current !== generation) return;
+      const result = await authApi.exchange(next.scene).catch(() => null);
+      if (current !== generation) return;
+      if (result?.status === 'APPROVED') {
+        challenge.value = null;
+        auth.acceptLogin();
+        const target = route.query.redirect;
+        await router.replace(typeof target === 'string' && /^\/(?![/\\])/.test(target) ? target : '/');
+      } else if (result?.status === 'EXPIRED' || Date.now() >= expiry) {
+        challenge.value = null;
+        status.value = '二维码已过期，请重新生成';
+      } else {
+        timer = setTimeout(poll, 1500);
+      }
+    }
+    timer = setTimeout(poll, 1000);
+  } catch {
+    status.value = '暂时无法生成二维码，请重试';
   } finally {
-    submitting.value = false;
+    loading.value = false;
   }
 }
+
+onBeforeUnmount(() => { void cancel(); });
 </script>
 
 <template>
-  <div class="min-h-screen w-full bg-shell flex justify-center">
-    <main class="w-full max-w-app min-h-screen bg-ios-bg flex flex-col justify-center px-8 safe-top safe-bottom">
-      <div class="animate-fade-in">
-        <div class="w-20 h-20 mx-auto rounded-[28px] bg-gradient-to-br from-ios-blue to-ios-teal flex items-center justify-center text-5xl shadow-soft">
-          👶
-        </div>
-        <div class="text-center mt-6">
-          <h1 class="text-2xl font-bold text-ios-label">宝宝成长记录</h1>
-          <p class="text-sm text-ios-secondary mt-2">请输入家庭访问密码以查看宝宝数据</p>
-        </div>
-
-        <form class="mt-8" @submit.prevent="submit">
-          <label for="password" class="block text-sm font-medium text-ios-secondary mb-2 px-1">访问密码</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            autocomplete="current-password"
-            autofocus
-            class="w-full h-14 px-5 rounded-2xl bg-ios-card text-ios-label shadow-card outline-none border border-transparent focus:border-ios-blue transition"
-            placeholder="请输入密码"
-            @input="error = ''"
-          />
-          <p v-if="error" class="text-sm text-ios-pink mt-2 px-1" role="alert">{{ error }}</p>
-          <button
-            type="submit"
-            class="w-full h-14 mt-5 rounded-2xl bg-ios-blue text-white font-semibold shadow-soft active:scale-[0.98] transition disabled:opacity-60"
-            :disabled="submitting"
-          >
-            {{ submitting ? '正在验证…' : '进入系统' }}
-          </button>
-        </form>
-        <p class="text-xs text-ios-secondary text-center mt-5">登录状态会在有效期内安全保留</p>
+  <main class="min-h-screen bg-ios-bg flex items-center justify-center px-5">
+    <div class="w-full max-w-sm rounded-3xl bg-ios-card p-6 text-center shadow-card">
+      <div class="text-4xl" aria-hidden="true">👶</div>
+      <h1 class="mt-3 text-xl font-bold text-ios-label">宝宝成长记录</h1>
+      <p class="mt-2 text-sm text-ios-secondary">使用微信扫一扫，在小程序中确认登录</p>
+      <img v-if="challenge" :src="challenge.qrCode" class="mx-auto mt-4 h-44 w-44" alt="小程序登录码" />
+      <p v-if="challenge" class="mt-2 text-sm text-ios-label">确认码 {{ challenge.verificationCode }}</p>
+      <p v-if="status" class="mt-3 text-sm text-ios-secondary" role="status">{{ status }}</p>
+      <div class="mt-5 flex justify-center gap-3">
+        <button class="rounded-2xl bg-ios-blue px-4 py-2 text-white" :disabled="loading" @click="start">
+          {{ loading ? '生成中…' : challenge ? '刷新二维码' : '获取登录二维码' }}
+        </button>
+        <button v-if="challenge" class="rounded-2xl bg-ios-bg px-4 py-2" @click="cancel">取消</button>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
 </template>

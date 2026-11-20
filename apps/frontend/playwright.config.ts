@@ -16,7 +16,7 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-chromium',
-      use: { ...devices['Pixel 5'] },
+      use: { ...devices['Pixel 5'], channel: process.env.PLAYWRIGHT_CHROMIUM_CHANNEL },
     },
   ],
 });
