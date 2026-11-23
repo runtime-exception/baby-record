@@ -2,7 +2,7 @@ import { http } from '@/utils/request';
 import type { DiaperVo, DiaperType, PaginatedResult } from '@baby-record/shared';
 
 export interface DiaperQuery {
-  babyId: number;
+  babyId: string;
   startDate?: string;
   endDate?: string;
   type?: DiaperType;
@@ -11,7 +11,7 @@ export interface DiaperQuery {
 }
 
 export interface CreateDiaperPayload {
-  babyId: number;
+  babyId: string;
   type: DiaperType;
   changeTime: string;
   remark?: string;

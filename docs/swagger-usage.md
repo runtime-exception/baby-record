@@ -28,7 +28,7 @@
   "code": 40001,
   "message": "参数校验失败",
   "data": null,
-  "details": ["babyId must be an integer number"],
+  "details": ["宝宝 ID 必须是 16 位十六进制字符"],
   "timestamp": "2026-08-03T10:00:00.000Z",
   "path": "/api/v1/feedings"
 }
@@ -71,7 +71,7 @@
 curl -X POST http://localhost:3000/api/v1/feedings \
   -H "Content-Type: application/json" \
   -d '{
-    "babyId": 1,
+    "babyId": "a1b2c3d4e5f60718",
     "feedingType": "FORMULA",
     "feedingTime": "2026-08-03T10:30:00.000Z",
     "amountMl": 120,
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3000/api/v1/feedings \
 # 2. 开始睡觉
 curl -X POST http://localhost:3000/api/v1/sleeps/start \
   -H "Content-Type: application/json" \
-  -d '{ "babyId": 1, "sleepType": "NIGHT", "creatorId": 2 }'
+  -d '{ "babyId": "a1b2c3d4e5f60718", "sleepType": "NIGHT", "creatorId": 2 }'
 
 # 3. 结束睡觉（用上一步返回的 id）
 curl -X PATCH http://localhost:3000/api/v1/sleeps/1/end \
@@ -90,19 +90,19 @@ curl -X PATCH http://localhost:3000/api/v1/sleeps/1/end \
   -d '{ "endTime": "2026-08-04T06:00:00.000Z" }'
 
 # 4. 首页仪表盘
-curl http://localhost:3000/api/v1/dashboard?babyId=1
+curl http://localhost:3000/api/v1/dashboard?babyId=a1b2c3d4e5f60718
 
 # 5. 查询某天全部记录
-curl "http://localhost:3000/api/v1/records/daily?babyId=1&date=2026-08-03"
+curl "http://localhost:3000/api/v1/records/daily?babyId=a1b2c3d4e5f60718&date=2026-08-03"
 
 # 6. 最近 7 天综合统计
-curl "http://localhost:3000/api/v1/statistics/overview?babyId=1&range=7d"
+curl "http://localhost:3000/api/v1/statistics/overview?babyId=a1b2c3d4e5f60718&range=7d"
 
 # 7. 喂养趋势图（最近 7 天）
-curl "http://localhost:3000/api/v1/charts/feeding?babyId=1&range=7d"
+curl "http://localhost:3000/api/v1/charts/feeding?babyId=a1b2c3d4e5f60718&range=7d"
 
 # 8. 时间间隔分析
-curl http://localhost:3000/api/v1/intervals/feeding?babyId=1
+curl http://localhost:3000/api/v1/intervals/feeding?babyId=a1b2c3d4e5f60718
 ```
 
 ## 枚举取值速查

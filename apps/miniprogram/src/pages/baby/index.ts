@@ -7,14 +7,34 @@ const roles = Object.keys(USER_ROLE_LABELS) as UserRole[];
 const labels = roles.map((role) => USER_ROLE_LABELS[role]);
 const fields = [
   { key: 'name', label: '姓名', type: 'text', required: true }, { key: 'nickname', label: '昵称', type: 'text' },
-  { key: 'birthWeight', label: '出生体重（kg）', type: 'digit' }, { key: 'birthHeight', label: '出生身高（cm）', type: 'digit' },
-  { key: 'headCircumference', label: '出生头围（cm）', type: 'digit' }, { key: 'birthHospital', label: '出生医院', type: 'text' },
+  { key: 'birthWeight', label: '体重（kg）', type: 'digit', placeholder: '3.5' }, { key: 'birthHeight', label: '身高（cm）', type: 'digit', placeholder: '50' },
+  { key: 'headCircumference', label: '头围（cm）', type: 'digit', placeholder: '34' }, { key: 'birthHospital', label: '出生医院', type: 'text' },
   { key: 'remark', label: '备注', type: 'text' },
 ];
 
 Page({
-  onShow() { applyAppearance(this); },
-  data: { today: dateString(), birthday: dateString(), gender: 'MALE', memberName: '', role: '', roleLabel: '', fields, labels, values: {} as Record<string, string>, editing: 0, busy: false, ready: false },
+  onShow() { applyAppearance(this, 'detail'); },
+  onUnload() { this.clearCountdown(); },
+  back() { wx.navigateBack(); },
+  copyId() { if (this.data.editing) wx.setClipboardData({ data: this.data.editing }); },
+  countdownTimer: 0,
+  data: {
+    today: dateString(),
+    birthday: dateString(),
+    gender: 'MALE',
+    role: '',
+    roleLabel: '',
+    measurements: fields.filter((item) => item.type === 'digit'),
+    labels,
+    values: {} as Record<string, string>,
+    editing: '',
+    busy: false,
+    ready: false,
+    deleteOpen: false,
+    deleteCountdown: 0,
+    deleting: false,
+    deleteInfo: { displayName: '', genderLabel: '', birthday: '' },
+  },
   async onLoad(query: { edit?: string }) {
     try {
       const context = await babyContext(false);
@@ -26,7 +46,6 @@ Page({
           editing: baby.id, birthday: baby.birthday, gender: baby.gender,
           values: Object.fromEntries(fields.map(({ key }) => [key, String(baby[key as keyof typeof baby] ?? '')])),
         });
-        wx.setNavigationBarTitle({ title: '编辑宝宝' });
       }
       this.setData({ ready: true });
     } catch (error) { report(error); }
@@ -36,16 +55,66 @@ Page({
   },
   setBirthday(event: WxInput) { this.setData({ birthday: event.detail.value }); },
   setGender(event: WxEvent) { this.setData({ gender: String(event.currentTarget.dataset.value) }); },
-  setName(event: WxInput) { this.setData({ memberName: event.detail.value }); },
   setRole(event: WxInput) {
     const role = roles[Number(event.detail.value)];
     this.setData({ role, roleLabel: USER_ROLE_LABELS[role] });
   },
+  askDelete() {
+    const { editing, values, gender, birthday } = this.data;
+    if (!editing || this.data.deleteOpen) return;
+    this.setData({
+      deleteOpen: true,
+      deleting: false,
+      deleteCountdown: 10,
+      deleteInfo: {
+        displayName: values.nickname?.trim() ? `${values.nickname.trim()}（${values.name}）` : values.name,
+        genderLabel: gender === 'MALE' ? '男' : '女',
+        birthday,
+      },
+    });
+    this.clearCountdown();
+    this.countdownTimer = setInterval(() => {
+      const next = this.data.deleteCountdown - 1;
+      if (next <= 0) {
+        this.clearCountdown();
+        this.setData({ deleteCountdown: 0 });
+      } else {
+        this.setData({ deleteCountdown: next });
+      }
+    }, 1000);
+  },
+  clearCountdown() {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = 0;
+    }
+  },
+  closeDelete() {
+    this.clearCountdown();
+    this.setData({ deleteOpen: false, deleteCountdown: 0, deleting: false });
+  },
+  noop() { /* 阻止弹层内点击穿透到遮罩 */ },
+  async confirmDelete() {
+    const id = this.data.editing;
+    if (!id || this.data.deleteCountdown > 0 || this.data.deleting) return;
+    this.setData({ deleting: true });
+    this.clearCountdown();
+    try {
+      await api('/babies/' + id, 'DELETE');
+      selectBaby('');
+      this.setData({ deleteOpen: false, deleteCountdown: 0, deleting: false });
+      wx.showToast({ title: '宝宝已删除', icon: 'success' });
+      wx.switchTab({ url: '/pages/profile/index' });
+    } catch (error) {
+      this.setData({ deleting: false });
+      report(error);
+    }
+  },
   async submit() {
-    const { editing, values, gender, birthday, role, memberName, busy, ready } = this.data;
+    const { editing, values, gender, birthday, role, busy, ready } = this.data;
     if (!ready || busy) return;
-    if (!values.name?.trim() || (!editing && (!memberName.trim() || !role))) {
-      return report(new Error('请填写宝宝姓名及你的身份'));
+    if (!values.name?.trim() || (!editing && !role)) {
+      return report(new Error('请填写宝宝姓名并选择与宝宝的关系'));
     }
     const payload = Object.fromEntries(fields.map(({ key, type }) => {
       const value = values[key]?.trim() ?? '';
@@ -53,8 +122,8 @@ Page({
     }));
     this.setData({ busy: true });
     try {
-      const result = await api<{ id: number }>(editing ? '/babies/' + editing : '/babies', editing ? 'PATCH' : 'POST', {
-        ...payload, gender, birthday, ...(!editing && { role, memberName: memberName.trim() }),
+      const result = await api<{ id: string }>(editing ? '/babies/' + editing : '/babies', editing ? 'PATCH' : 'POST', {
+        ...payload, gender, birthday, ...(!editing && { role }),
       });
       selectBaby(result.id);
       wx.showToast({ title: '已保存', icon: 'success' });

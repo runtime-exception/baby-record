@@ -8,10 +8,10 @@ configuration();
 const prisma = new PrismaClient();
 
 async function main() {
-  const babyId = Number(process.argv[2]);
+  const babyId = process.argv[2];
   const hours = Number(process.argv[3] ?? 24);
-  if (!Number.isInteger(babyId) || babyId < 1 || babyId > 2147483647 || !Number.isInteger(hours) || hours < 1 || hours > 168) {
-    throw new Error('用法：claim-baby <宝宝ID> [有效小时数，1–168]');
+  if (!/^[a-f0-9]{16}$/i.test(babyId) || !Number.isInteger(hours) || hours < 1 || hours > 168) {
+    throw new Error('用法：claim-baby <16位宝宝ID> [有效小时数，1–168]');
   }
   const code = randomBytes(16).toString('hex');
   const expiresAt = new Date(Date.now() + hours * 3600_000);

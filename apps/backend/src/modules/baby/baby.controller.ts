@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { BabyService } from './baby.service';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/enums/error-code.enum';
+import { BabyIdPipe } from '../../common/pipes/baby-id.pipe';
 import { FamilyRequest } from '../auth/family-scope';
 import { CreateFamilyBabyDto } from './dto/create-baby.dto';
 import { UpdateBabyDto } from './dto/update-baby.dto';
@@ -22,7 +23,7 @@ export class BabyController {
 
   @Post(':id/avatar')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 8 * 1024 * 1024, files: 1 } }))
-  uploadAvatar(@Param('id', ParseIntPipe) id: number, @UploadedFile() file?: Express.Multer.File) {
+  uploadAvatar(@Param('id', BabyIdPipe) id: string, @UploadedFile() file?: Express.Multer.File) {
     if (!file?.buffer) throw new BusinessException(ErrorCode.PARAM_MISSING, '请上传头像文件');
     const bytes = file.buffer;
     const prefix = bytes.subarray(0, 12).toString('hex');
@@ -36,7 +37,7 @@ export class BabyController {
   }
 
   @Get(':id/avatar')
-  async avatar(@Param('id', ParseIntPipe) id: number, @Res() response: Response) {
+  async avatar(@Param('id', BabyIdPipe) id: string, @Res() response: Response) {
     const avatar = await this.babyService.avatarContent(id);
     response.setHeader('X-Content-Type-Options', 'nosniff');
     if (avatar.body) {
@@ -49,8 +50,13 @@ export class BabyController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBabyDto) {
+  update(@Param('id', BabyIdPipe) id: string, @Body() dto: UpdateBabyDto) {
     return this.babyService.update(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', BabyIdPipe) id: string) {
+    return this.babyService.remove(id);
   }
 
   @Get()
@@ -59,7 +65,7 @@ export class BabyController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', BabyIdPipe) id: string) {
     return this.babyService.findOne(id);
   }
 }

@@ -21,7 +21,7 @@ export interface SupplementConfigVo {
 export class SupplementConfigService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(babyId: number, includeInactive = false): Promise<SupplementConfigVo[]> {
+  findAll(babyId: string, includeInactive = false): Promise<SupplementConfigVo[]> {
     return this.prisma.supplementConfig
       .findMany({
         where: { babyId, ...(!includeInactive && { isActive: true }) },
@@ -30,7 +30,7 @@ export class SupplementConfigService {
       .then((items) => items.map((item) => this.toVo(item)));
   }
 
-  async create(babyId: number, dto: CreateSupplementConfigDto): Promise<SupplementConfigVo> {
+  async create(babyId: string, dto: CreateSupplementConfigDto): Promise<SupplementConfigVo> {
     const name = dto.name.trim();
     if (!name) throw new BusinessException(ErrorCode.PARAM_INVALID, '补剂名称不能为空');
     const existing = await this.prisma.supplementConfig.findUnique({ where: { babyId_name: { babyId, name } } });
@@ -47,7 +47,7 @@ export class SupplementConfigService {
     return this.toVo(item);
   }
 
-  async update(babyId: number, id: number, dto: UpdateSupplementConfigDto): Promise<SupplementConfigVo> {
+  async update(babyId: string, id: number, dto: UpdateSupplementConfigDto): Promise<SupplementConfigVo> {
     await this.findOne(babyId, id);
     const name = dto.name?.trim();
     if (dto.name !== undefined && !name) {
@@ -74,12 +74,12 @@ export class SupplementConfigService {
     return this.toVo(item);
   }
 
-  async remove(babyId: number, id: number): Promise<void> {
+  async remove(babyId: string, id: number): Promise<void> {
     await this.findOne(babyId, id);
     await this.prisma.supplementConfig.update({ where: { id, babyId }, data: { isActive: false } });
   }
 
-  private async findOne(babyId: number, id: number): Promise<SupplementConfig> {
+  private async findOne(babyId: string, id: number): Promise<SupplementConfig> {
     const item = await this.prisma.supplementConfig.findUnique({ where: { id, babyId } });
     if (!item) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND, '补剂配置不存在');
     return item;

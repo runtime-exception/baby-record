@@ -4,9 +4,10 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/enums/error-code.enum';
+import { parseBabyId } from '../../common/utils/baby-id.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from './auth.service';
-import { FamilyRequest, canAccessBaby, positiveId } from './family-scope';
+import { FamilyRequest, canAccessBaby, recordId } from './family-scope';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -32,7 +33,7 @@ export class AuthGuard implements CanActivate {
     const { method, body, params, query } = request;
     if (route === 'auth' || route === 'family') return true;
 
-    const recordLookup: Record<string, (id: number) => Promise<{ babyId: number } | null>> = {
+    const recordLookup: Record<string, (id: number) => Promise<{ babyId: string } | null>> = {
       feedings: (id) => this.prisma.feeding.findUnique({ where: { id }, select: { babyId: true } }),
       diapers: (id) => this.prisma.diaper.findUnique({ where: { id }, select: { babyId: true } }),
       sleeps: (id) => this.prisma.sleep.findUnique({ where: { id }, select: { babyId: true } }),
@@ -44,29 +45,29 @@ export class AuthGuard implements CanActivate {
     };
     const configuration = ['foods', 'supplement-configs', 'exercise-configs'];
     const aggregates = ['dashboard', 'intervals', 'records', 'statistics', 'charts'];
-    let babyId: number;
+    let babyId: string;
     let admin = false;
     let assignCreator = false;
 
     if (route === 'babies') {
       if (path === '/' && (method === 'POST' || method === 'GET')) return true;
-      babyId = positiveId(params.id);
+      babyId = parseBabyId(params.id);
       admin = method !== 'GET';
     } else if (configuration.includes(route)) {
-      babyId = positiveId(request.get('x-baby-id'));
+      babyId = parseBabyId(request.get('x-baby-id'));
     } else if (Object.prototype.hasOwnProperty.call(recordLookup, route)) {
       if (path.startsWith(':id')) {
-        const record = await recordLookup[route](positiveId(params.id));
+        const record = await recordLookup[route](recordId(params.id));
         if (!record) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
         babyId = record.babyId;
       } else if (method === 'POST') {
-        babyId = positiveId(body?.babyId);
+        babyId = parseBabyId(body?.babyId);
         assignCreator = true;
       } else {
-        babyId = positiveId(query.babyId);
+        babyId = parseBabyId(query.babyId);
       }
     } else if (aggregates.includes(route)) {
-      babyId = positiveId(query.babyId);
+      babyId = parseBabyId(query.babyId);
     } else {
       throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
     }
@@ -85,6 +86,8 @@ export class AuthGuard implements CanActivate {
     }
     request.babyId = babyId;
     if (assignCreator) body.creatorId = member!.creatorId;
+    if (query?.babyId !== undefined) query.babyId = babyId;
+    if (body?.babyId !== undefined) body.babyId = babyId;
     return true;
   }
 }

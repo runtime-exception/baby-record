@@ -47,9 +47,15 @@ const seniorMode = computed({
 
 const baby = computed(() => babyStore.currentBaby);
 const user = computed(() => userStore.currentUser);
+const roleCaption = computed(() => {
+  const current = user.value;
+  if (!current) return '';
+  const label = USER_ROLE_LABELS[current.role];
+  return current.name === label ? '' : label;
+});
 const babies = computed(() => babyStore.babies);
 
-function selectBaby(id: number) {
+function selectBaby(id: string) {
   babyStore.setCurrentBaby(id);
 }
 
@@ -67,7 +73,7 @@ async function chooseAvatar(event: Event) {
   (event.target as HTMLInputElement).value = '';
 }
 
-async function copyBabyId(id: number) {
+async function copyBabyId(id: string) {
   try {
     await navigator.clipboard.writeText(String(id));
     message.success('宝宝 ID 已复制');
@@ -158,7 +164,7 @@ async function logout() {
         </div>
         <div class="flex-1">
           <p class="text-sm font-semibold text-ios-label">{{ user.name }}</p>
-          <p class="text-xs text-ios-secondary">{{ USER_ROLE_LABELS[user.role] }}</p>
+          <p v-if="roleCaption" class="text-xs text-ios-secondary">{{ roleCaption }}</p>
         </div>
       </div>
     </section>

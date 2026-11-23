@@ -22,7 +22,7 @@ export interface ExerciseConfigVo {
 export class ExerciseConfigService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(babyId: number, includeInactive = false): Promise<ExerciseConfigVo[]> {
+  findAll(babyId: string, includeInactive = false): Promise<ExerciseConfigVo[]> {
     return this.prisma.exerciseConfig
       .findMany({
         where: { babyId, ...(!includeInactive && { isActive: true }) },
@@ -31,7 +31,7 @@ export class ExerciseConfigService {
       .then((items) => items.map((item) => this.toVo(item)));
   }
 
-  async create(babyId: number, dto: CreateExerciseConfigDto): Promise<ExerciseConfigVo> {
+  async create(babyId: string, dto: CreateExerciseConfigDto): Promise<ExerciseConfigVo> {
     const name = dto.name.trim();
     if (!name) throw new BusinessException(ErrorCode.PARAM_INVALID, '运动名称不能为空');
     const existing = await this.prisma.exerciseConfig.findUnique({ where: { babyId_name: { babyId, name } } });
@@ -51,7 +51,7 @@ export class ExerciseConfigService {
     return this.toVo(item);
   }
 
-  async update(babyId: number, id: number, dto: UpdateExerciseConfigDto): Promise<ExerciseConfigVo> {
+  async update(babyId: string, id: number, dto: UpdateExerciseConfigDto): Promise<ExerciseConfigVo> {
     const existing = await this.findOne(babyId, id);
     validateExerciseAmount(dto.defaultAmount === undefined ? existing.defaultAmount : dto.defaultAmount, dto.defaultUnit === undefined ? existing.defaultUnit : dto.defaultUnit);
     const name = dto.name?.trim();
@@ -77,12 +77,12 @@ export class ExerciseConfigService {
     return this.toVo(item);
   }
 
-  async remove(babyId: number, id: number): Promise<void> {
+  async remove(babyId: string, id: number): Promise<void> {
     await this.findOne(babyId, id);
     await this.prisma.exerciseConfig.update({ where: { id, babyId }, data: { isActive: false } });
   }
 
-  private async findOne(babyId: number, id: number): Promise<ExerciseConfig> {
+  private async findOne(babyId: string, id: number): Promise<ExerciseConfig> {
     const item = await this.prisma.exerciseConfig.findUnique({ where: { id, babyId } });
     if (!item) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND, '运动配置不存在');
     return item;

@@ -2,7 +2,7 @@ import { http } from '@/utils/request';
 import type { FeedingVo, FeedingType, FeedingComponent, PaginatedResult } from '@baby-record/shared';
 
 export interface FeedingQuery {
-  babyId: number;
+  babyId: string;
   startDate?: string;
   endDate?: string;
   feedingType?: FeedingType;
@@ -11,7 +11,7 @@ export interface FeedingQuery {
 }
 
 export interface CreateFeedingPayload {
-  babyId: number;
+  babyId: string;
   feedingType: FeedingType;
   components?: FeedingComponent[];
   feedingTime: string;

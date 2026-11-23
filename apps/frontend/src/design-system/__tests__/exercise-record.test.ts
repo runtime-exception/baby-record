@@ -12,7 +12,7 @@ vi.mock('@/api/supplement-config', () => ({ supplementConfigApi: { list: vi.fn()
 vi.mock('@/api/activity', () => ({ activityApi: { create: mocks.create, update: mocks.update } }));
 vi.mock('@/api/growth', () => ({ growthApi: { latest: vi.fn().mockResolvedValue(null) } }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/stores/baby', () => ({ useBabyStore: () => ({ currentBaby: { id: 7 } }) }));
+vi.mock('@/stores/baby', () => ({ useBabyStore: () => ({ currentBaby: { id: 'a1b2c3d4e5f60718' } }) }));
 vi.mock('@/stores/user', () => ({ useUserStore: () => ({ currentUser: { id: 9 } }) }));
 vi.mock('@/stores/theme', () => ({ useThemeStore: () => ({ seniorMode: false }) }));
 vi.mock('@/stores/dashboard', () => ({ useDashboardStore: () => ({ fetch: vi.fn() }) }));
@@ -49,12 +49,12 @@ describe('exercise recording', () => {
     await w.get('input[placeholder="运动时长"]').setValue('3');
     await w.get('[data-testid="save-record"]').trigger('click'); await flushPromises();
     expect(mocks.create).toHaveBeenCalledTimes(1);
-    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ eventType: '运动', exerciseTypes: ['翻身', '抬头'], amount: '3', unit: '分钟', babyId: 7, creatorId: 9 }));
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ eventType: '运动', exerciseTypes: ['翻身', '抬头'], amount: '3', unit: '分钟', babyId: 'a1b2c3d4e5f60718', creatorId: 9 }));
   });
 });
 
 it('edits an existing exercise record without resetting its quantity', async () => {
-  const entry = { type: 'activity', time: '2026-10-01T08:00:00Z', icon: '🤸', title: '运动', detail: '', colorClass: '', raw: { id: 4, babyId: 7, eventType: '运动', exerciseTypes: ['翻身', '抬头'], amount: '7', unit: '分钟', eventTime: '2026-10-01T08:00:00Z', creatorId: 9, createdTime: '2026-10-01T08:00:00Z', description: null, remark: null } } as TimelineEntry;
+  const entry = { type: 'activity', time: '2026-10-01T08:00:00Z', icon: '🤸', title: '运动', detail: '', colorClass: '', raw: { id: 4, babyId: 'a1b2c3d4e5f60718', eventType: '运动', exerciseTypes: ['翻身', '抬头'], amount: '7', unit: '分钟', eventTime: '2026-10-01T08:00:00Z', creatorId: 9, createdTime: '2026-10-01T08:00:00Z', description: null, remark: null } } as TimelineEntry;
   const w = mount(EditRecordModal, { props: { entry }, global: { stubs: { ...stubs, AppSheet: { template: '<div><slot /></div>' } } } });
   await flushPromises();
   expect((w.get('input[placeholder="运动时长"]').element as HTMLInputElement).value).toBe('7');

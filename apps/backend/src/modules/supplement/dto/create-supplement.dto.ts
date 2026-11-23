@@ -1,12 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { BABY_ID_PATTERN } from '../../../common/utils/baby-id.util';
 
 export class CreateSupplementDto {
   @ApiProperty({ description: '宝宝ID' })
-  @Type(() => Number)
-  @IsInt()
-  babyId: number;
+  @IsString()
+  @Matches(BABY_ID_PATTERN, { message: '宝宝 ID 必须是 16 位十六进制字符' })
+  babyId: string;
 
   @ApiProperty({ example: '维生素D', description: '补剂名称（维生素D/DHA/钙/其他）' })
   @IsString()

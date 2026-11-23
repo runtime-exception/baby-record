@@ -104,7 +104,7 @@ export class FoodAllergyService {
     return record;
   }
 
-  private async ensureRefs(babyId: number, creatorId: number, foodId: number) {
+  private async ensureRefs(babyId: string, creatorId: number, foodId: number) {
     const [baby, user] = await Promise.all([
       this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } }),
       this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } }),
@@ -114,7 +114,7 @@ export class FoodAllergyService {
     await this.ensureFood(babyId, foodId);
   }
 
-  private async ensureFood(babyId: number, foodId: number) {
+  private async ensureFood(babyId: string, foodId: number) {
     const food = await this.prisma.food.findFirst({ where: { id: foodId, babyId, isActive: true }, select: { id: true } });
     if (!food) throw new BusinessException(ErrorCode.PARAM_INVALID, '辅食不存在或已停用');
   }

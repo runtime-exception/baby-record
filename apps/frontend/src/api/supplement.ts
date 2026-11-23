@@ -2,7 +2,7 @@ import { http } from '@/utils/request';
 import type { SupplementVo, PaginatedResult } from '@baby-record/shared';
 
 export interface SupplementQuery {
-  babyId: number;
+  babyId: string;
   startDate?: string;
   endDate?: string;
   name?: string;
@@ -11,7 +11,7 @@ export interface SupplementQuery {
 }
 
 export interface CreateSupplementPayload {
-  babyId: number;
+  babyId: string;
   name: string;
   amount?: string;
   unit?: string;

@@ -141,14 +141,14 @@ WECHAT_APP_ID=wx你的AppID MINIPROGRAM_API_BASE_URL=https://baby.example.com/ap
 
 ### 现有宝宝迁移
 
-先备份数据库并在副本执行 Prisma 迁移。每个旧宝宝在管理员认领后开放访问，原记录与署名继续保留。部署者在后端运行目录生成认领码，将它和宝宝 ID 私下交给对应家长。家长登录微信后，在「绑定已有宝宝」勾选「我有旧宝宝认领码」，填写 ID、身份和认领码。
+先备份数据库并在副本执行 Prisma 迁移。迁移会把宝宝 ID 从连续整数改为 16 位小写十六进制随机码，并同步改写记录、成员和配置中的宝宝外键。每个旧宝宝在管理员认领后开放访问，原记录与署名继续保留。部署者在后端运行目录生成认领码，将它和 16 位宝宝 ID 私下交给对应家长。家长登录微信后，在「绑定已有宝宝」勾选「我有旧宝宝认领码」，填写 ID、身份和认领码。
 
 ```bash
 # 从项目根目录在 Docker 部署中生成指定宝宝的认领码，默认 24 小时失效
-docker compose exec -w /app/apps/backend app node dist/prisma/claim-baby.js 123
+docker compose exec -w /app/apps/backend app node dist/prisma/claim-baby.js a1b2c3d4e5f60718
 # 查看旧配置，再将指定配置复制给指定宝宝
 docker compose exec -w /app/apps/backend app node dist/prisma/assign-legacy-config.js list
-docker compose exec -w /app/apps/backend app node dist/prisma/assign-legacy-config.js food 12 123
+docker compose exec -w /app/apps/backend app node dist/prisma/assign-legacy-config.js food 12 a1b2c3d4e5f60718
 ```
 
 配置类型为 `food`、`supplement` 或 `exercise`。已有引用的配置随历史记录迁移。旧的全局配置保留给部署者按归属分配。分配命令遇到目标宝宝已有同名配置时保留当前配置，确需覆盖时显式传 `--replace`。
@@ -243,7 +243,7 @@ pnpm dev           # 即 pnpm dev:frontend
 
 ## 数据库设计
 
-共 10 张表（7 张核心表 + 3 张预留表）。所有业务表统一：主键自增、外键 `baby_id`（级联删除）、外键 `creator_id`、`created_time`，关键查询字段建复合索引 `(baby_id, 业务时间)`。
+共 10 张核心/预留业务表。记录主键自增，宝宝主键为 16 位小写十六进制随机码，记录与配置通过外键 `baby_id` 级联关联；所有业务表保留 `creator_id`、`created_time`，关键查询字段建复合索引 `(baby_id, 业务时间)`。
 
 | 表 | 关键字段 |
 |---|---|

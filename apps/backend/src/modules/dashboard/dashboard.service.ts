@@ -30,7 +30,7 @@ export class DashboardService {
     private readonly feedingGuides: FeedingGuideService,
   ) {}
 
-  async overview(babyId: number) {
+  async overview(babyId: string) {
     const now = new Date();
     const [baby, lastFeeding, lastMilkFeeding, lastDiaper, lastSleep, latestTemperature, latestGrowth, allergyRecords] = await Promise.all([
       this.prisma.baby.findUnique({ where: { id: babyId }, select: { birthday: true } }),

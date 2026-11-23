@@ -17,7 +17,7 @@ export class IntervalService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 喂养间隔 */
-  async feeding(babyId: number): Promise<IntervalResult> {
+  async feeding(babyId: string): Promise<IntervalResult> {
     const records = await this.prisma.feeding.findMany({
       where: { babyId },
       orderBy: { feedingTime: 'desc' },
@@ -27,7 +27,7 @@ export class IntervalService {
   }
 
   /** 纸尿裤更换间隔 */
-  async diaper(babyId: number): Promise<IntervalResult> {
+  async diaper(babyId: string): Promise<IntervalResult> {
     const records = await this.prisma.diaper.findMany({
       where: { babyId },
       orderBy: { changeTime: 'desc' },
@@ -37,7 +37,7 @@ export class IntervalService {
   }
 
   /** 睡眠间隔（按开始时间） */
-  async sleep(babyId: number): Promise<IntervalResult> {
+  async sleep(babyId: string): Promise<IntervalResult> {
     const records = await this.prisma.sleep.findMany({
       where: { babyId },
       orderBy: { startTime: 'desc' },

@@ -1,0 +1,20 @@
+.babyIdRow { margin-top: 0; align-items: center; }
+.babyIdLine { display: flex; align-items: baseline; gap: 12rpx; min-width: 0; }
+.babyIdValue { font-size: calc(var(--font, 30rpx) - 2rpx); font-weight: 650; overflow-wrap: anywhere; }
+.birthMetrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16rpx; }
+.identityPicker { margin-top: 10rpx; }
+.birthMetrics input { padding-left: 12rpx; padding-right: 12rpx; }
+.saveBaby { width: 100%; padding: 26rpx 18rpx; background: var(--accent); }
+.deleteBaby { width: 100%; margin-top: 20rpx; color: #e5484d; background: #fff0f1; }
+.sheetBackdrop { position: fixed; z-index: 30; inset: 0; display: flex; align-items: flex-end; background: #16223372; }
+.deleteSheet { width: 100%; box-sizing: border-box; padding: 34rpx 34rpx calc(34rpx + env(safe-area-inset-bottom)); border-radius: 40rpx 40rpx 0 0; background: var(--card,#fff); }
+.deleteTitle { font-size: 34rpx; font-weight: 700; text-align: center; }
+.deleteBabyInfo { margin-top: 26rpx; padding: 24rpx 28rpx; border-radius: 28rpx; background: var(--input,#f2f2f7); }
+.deleteBabyName { font-size: 30rpx; font-weight: 650; }
+.deleteGender { margin-left: 12rpx; padding: 2rpx 14rpx; border-radius: 999rpx; font-size: 22rpx; color: #007aff; background: #007aff1f; }
+.deleteWarning { margin-top: 24rpx; text-align: center; color: #e5484d; font-size: 26rpx; }
+.deleteActions { display: flex; gap: 16rpx; margin-top: 30rpx; }
+.deleteActions button { flex: 1; padding: 22rpx 0; border-radius: 999rpx; }
+.deleteConfirm { color: #e5484d; background: #fff0f1; font-weight: 600; }
+.deleteConfirm.pending { opacity: .55; }
+.deleteCancel { color: #182439; background: var(--input,#f2f2f7); font-weight: 600; }

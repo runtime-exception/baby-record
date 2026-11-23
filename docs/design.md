@@ -55,7 +55,7 @@ Common 层      (Filter / Interceptor / Decorator / Util)
 
 ## 四、数据库 ER 设计
 
-共 7 张核心表 + 3 张预留表。所有业务表统一：主键自增、外键 `baby_id`（级联删除）、外键 `creator_id`、`created_time`、关键查询字段建复合索引 `(baby_id, 业务时间)`。
+共 7 张核心表 + 3 张预留业务表。记录主键自增，宝宝主键为 16 位小写十六进制随机码；业务表通过 `baby_id` 外键级联关联宝宝，并保留 `creator_id`、`created_time`，关键查询字段建复合索引 `(baby_id, 业务时间)`。
 
 ER 图见 [er-diagram.md](./er-diagram.md)，建表 SQL 见 [schema.sql](./schema.sql)。
 

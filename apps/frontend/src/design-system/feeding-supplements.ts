@@ -2,7 +2,7 @@ import type { SupplementConfigVo } from '@baby-record/shared';
 import type { CreateSupplementPayload } from '@/api/supplement';
 
 interface FeedingSupplementContext {
-  babyId: number;
+  babyId: string;
   creatorId: number;
   feedingTime: string;
 }

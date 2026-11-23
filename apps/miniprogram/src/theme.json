@@ -1,4 +1,4 @@
 {
   "light": { "navigation": "#f2f2f7", "text": "black" },
-  "dark": { "navigation": "#101925", "text": "white" }
+  "dark": { "navigation": "#000000", "text": "white" }
 }

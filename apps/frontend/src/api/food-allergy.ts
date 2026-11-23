@@ -7,7 +7,7 @@ import type {
 } from '@baby-record/shared';
 
 export interface FoodAllergyPayload {
-  babyId: number;
+  babyId: string;
   foodId: number;
   exposureTime: string;
   observations: FoodAllergyObservations;
@@ -17,7 +17,7 @@ export interface FoodAllergyPayload {
 }
 
 export const foodAllergyApi = {
-  list: (params: { babyId: number; startDate?: string; endDate?: string; page?: number; pageSize?: number }) =>
+  list: (params: { babyId: string; startDate?: string; endDate?: string; page?: number; pageSize?: number }) =>
     http.get<PaginatedResult<FoodAllergyRecordVo>>('/food-allergies', params),
   detail: (id: number) => http.get<FoodAllergyRecordVo>(`/food-allergies/${id}`),
   create: (data: FoodAllergyPayload) => http.post<FoodAllergyRecordVo>('/food-allergies', data),

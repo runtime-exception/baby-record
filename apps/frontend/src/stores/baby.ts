@@ -9,7 +9,7 @@ const CURRENT_BABY_KEY = 'baby-record:currentBabyId';
 
 export const useBabyStore = defineStore('baby', () => {
   const babies = ref<MemberBaby[]>([]);
-  const currentBabyId = ref<number | null>(null);
+  const currentBabyId = ref<string | null>(null);
   const loading = ref(false);
 
   const currentBaby = computed(() => babies.value.find((b) => b.id === currentBabyId.value) || null);
@@ -23,7 +23,7 @@ export const useBabyStore = defineStore('baby', () => {
       const next = await babyApi.list();
       if (request !== generation) return;
       babies.value = next;
-      const saved = currentBabyId.value ?? Number(localStorage.getItem(CURRENT_BABY_KEY));
+      const saved = currentBabyId.value ?? localStorage.getItem(CURRENT_BABY_KEY);
       const target = next.find((item) => item.id === saved) ?? next[0];
       select(target?.id ?? null);
     } finally {
@@ -31,14 +31,14 @@ export const useBabyStore = defineStore('baby', () => {
     }
   }
 
-  function select(id: number | null) {
+  function select(id: string | null) {
     setRequestBaby(id);
     currentBabyId.value = id;
     if (id === null) localStorage.removeItem(CURRENT_BABY_KEY);
     else localStorage.setItem(CURRENT_BABY_KEY, String(id));
   }
 
-  function setCurrentBaby(id: number) {
+  function setCurrentBaby(id: string) {
     if (babies.value.some((item) => item.id === id)) select(id);
   }
 

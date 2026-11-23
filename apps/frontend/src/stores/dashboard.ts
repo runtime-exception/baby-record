@@ -17,7 +17,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     loading.value = false;
   }, { flush: 'sync' });
 
-  async function fetch(babyId: number) {
+  async function fetch(babyId: string) {
     if (babies.currentBabyId !== babyId) return;
     const request = ++generation;
     loading.value = true;

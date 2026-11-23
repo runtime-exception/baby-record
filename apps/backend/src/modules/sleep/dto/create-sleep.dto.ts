@@ -1,16 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SleepType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Matches } from 'class-validator';
+import { BABY_ID_PATTERN } from '../../../common/utils/baby-id.util';
 
 /**
  * 完整创建睡眠记录（可录入一段已结束的睡眠）
  */
 export class CreateSleepDto {
   @ApiProperty({ description: '宝宝ID' })
-  @Type(() => Number)
-  @IsInt()
-  babyId: number;
+  @IsString()
+  @Matches(BABY_ID_PATTERN, { message: '宝宝 ID 必须是 16 位十六进制字符' })
+  babyId: string;
 
   @ApiPropertyOptional({ enum: SleepType, example: SleepType.NIGHT, description: '睡眠类型（不传时按开始时间自动判断）' })
   @IsOptional()

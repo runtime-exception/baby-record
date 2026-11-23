@@ -1,8 +1,8 @@
 page { background: var(--bg,#f2f2f7); color: var(--text,#182439); font: var(--font,30rpx) -apple-system, BlinkMacSystemFont, sans-serif; }
-.screen { padding: 26rpx 32rpx 48rpx; }
-.heading { font-size: 56rpx; font-weight: 700; letter-spacing: -1rpx; }
-.subtitle { margin-top: 8rpx; color: var(--muted,#64748b); }
-.panel { margin-top: 22rpx; padding: 28rpx; background: var(--card,#fff); border-radius: var(--radius,46rpx); box-shadow: 0 4rpx 18rpx rgba(29,57,94,.06); }
+.screen { padding: 24rpx 38rpx 64rpx; }
+.heading { font-size: calc(var(--font, 30rpx) + 16rpx); line-height: 1.2; font-weight: 700; letter-spacing: -1rpx; }
+.subtitle { margin-top: 8rpx; color: var(--muted,#64748b); font-size: calc(var(--font, 30rpx) - 4rpx); }
+.panel { margin-top: 24rpx; padding: 30rpx; background: var(--card,#fff); border-radius: var(--radius,46rpx); box-shadow: 0 4rpx 18rpx rgba(29,57,94,.06); }
 .hero { color: #fff; background: linear-gradient(135deg,#007aff,#1eb6bd); }
 .title { font-size: 34rpx; font-weight: 650; }
 .muted { color: var(--muted,#64748b); font-size: 26rpx; }
@@ -35,3 +35,25 @@ textarea { height: 160rpx; }
 .recordRow:last-child { border: 0; }
 .chart { width: 100%; height: 310rpx; }
 .center { text-align: center; }
+
+/* 布局尺寸以 Web 的手机页面为基准。 */
+.tabScreen { padding-top: calc(var(--status-inset, 20px) + 32rpx); }
+.screen > .panel:first-child { margin-top: 16rpx; }
+.pageIntro { margin-bottom: 48rpx; padding-right: 184rpx; }
+.sectionCaption { color: var(--muted); font-size: calc(var(--font, 30rpx) - 4rpx); font-weight: 600; padding-left: 8rpx; }
+.segment { display: flex; gap: 4rpx; padding: 6rpx; background: var(--input); border-radius: 30rpx; }
+.segment button { flex: 1; padding: 15rpx 4rpx; color: var(--muted); background: transparent; border-radius: 24rpx; white-space: nowrap; }
+.segment button.current { color: var(--text); background: var(--card); box-shadow: 0 2rpx 6rpx #00000016; font-weight: 600; }
+.textAction { display: inline-flex; width: auto; padding: 8rpx 0; background: transparent; color: var(--accent); font-size: calc(var(--font, 30rpx) - 4rpx); }
+.dateRange { display: flex; align-items: center; gap: 12rpx; }
+.dateRange picker { flex: 1; border-radius: 22rpx; background: transparent; padding: 0; min-height: 70rpx; }
+.dateRange .dateValue { display: flex; align-items: center; justify-content: space-between; min-height: 70rpx; gap: 4rpx; font-size: calc(var(--font, 30rpx) - 3rpx); }
+.dateGlyph { width: 16rpx; height: 16rpx; border: 2rpx solid currentColor; border-top-width: 5rpx; border-radius: 3rpx; flex: none; margin-right: 3rpx; }
+.shortcuts { display: grid; gap: 14rpx; grid-template-columns: repeat(4,minmax(0,1fr)); }
+.shortcuts button { width: 100%; min-width: 0; padding: 16rpx 0; color: var(--text); background: var(--card); border-radius: 34rpx; font-size: calc(var(--font, 30rpx) - 7rpx); }
+.shortcutIcon { display: block; font-size: 38rpx; line-height: 1.35; margin-bottom: 6rpx; }
+
+.detailHeader { display: flex; align-items: center; gap: 16rpx; min-height: 76rpx; margin-bottom: 28rpx; padding-right: 170rpx; }
+.detailHeader .heading { overflow-wrap: break-word; }
+button.backButton { display: flex; align-items: center; justify-content: center; flex: none; width: 52rpx; height: 76rpx; padding: 0; background: transparent; color: var(--accent); }
+.backChevron { width: 13rpx; height: 13rpx; border-left: 4rpx solid currentColor; border-bottom: 4rpx solid currentColor; transform: rotate(45deg); }

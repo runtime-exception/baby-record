@@ -11,7 +11,7 @@ import { QueryTemperatureDto } from './dto/query-temperature.dto';
 
 export interface TemperatureVo {
   id: number;
-  babyId: number;
+  babyId: string;
   temperature: number;
   measureTime: string;
   remark: string | null;
@@ -56,7 +56,7 @@ export class TemperatureService {
   }
 
   /** 最新一次体温（供首页展示） */
-  async findLatest(babyId: number): Promise<TemperatureVo | null> {
+  async findLatest(babyId: string): Promise<TemperatureVo | null> {
     const t = await this.prisma.temperature.findFirst({
       where: { babyId },
       orderBy: { measureTime: 'desc' },
@@ -88,14 +88,14 @@ export class TemperatureService {
     await this.prisma.temperature.delete({ where: { id } });
   }
 
-  async findByRange(babyId: number, start: Date, end: Date): Promise<Temperature[]> {
+  async findByRange(babyId: string, start: Date, end: Date): Promise<Temperature[]> {
     return this.prisma.temperature.findMany({
       where: { babyId, measureTime: { gte: start, lte: end } },
       orderBy: { measureTime: 'desc' },
     });
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });

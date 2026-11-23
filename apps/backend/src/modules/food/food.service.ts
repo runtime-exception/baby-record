@@ -19,7 +19,7 @@ export interface FoodVo {
 export class FoodService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(babyId: number, includeInactive = false): Promise<FoodVo[]> {
+  findAll(babyId: string, includeInactive = false): Promise<FoodVo[]> {
     return this.prisma.food
       .findMany({
         where: { babyId, ...(!includeInactive && { isActive: true }) },
@@ -28,7 +28,7 @@ export class FoodService {
       .then((foods) => foods.map((food) => this.toVo(food)));
   }
 
-  async create(babyId: number, dto: CreateFoodDto): Promise<FoodVo> {
+  async create(babyId: string, dto: CreateFoodDto): Promise<FoodVo> {
     const name = dto.name.trim();
     if (!name) throw new BusinessException(ErrorCode.PARAM_INVALID, '辅食名称不能为空');
     const existing = await this.prisma.food.findUnique({ where: { babyId_name: { babyId, name } } });
@@ -37,7 +37,7 @@ export class FoodService {
     return this.toVo(await this.prisma.food.create({ data: { babyId, name, emoji } }));
   }
 
-  async update(babyId: number, id: number, dto: UpdateFoodDto): Promise<FoodVo> {
+  async update(babyId: string, id: number, dto: UpdateFoodDto): Promise<FoodVo> {
     await this.findOne(babyId, id);
     const name = dto.name?.trim();
     if (dto.name !== undefined && !name) {
@@ -54,12 +54,12 @@ export class FoodService {
     return this.toVo(food);
   }
 
-  async remove(babyId: number, id: number): Promise<void> {
+  async remove(babyId: string, id: number): Promise<void> {
     await this.findOne(babyId, id);
     await this.prisma.food.update({ where: { id, babyId }, data: { isActive: false } });
   }
 
-  private async findOne(babyId: number, id: number): Promise<Food> {
+  private async findOne(babyId: string, id: number): Promise<Food> {
     const food = await this.prisma.food.findUnique({ where: { id, babyId } });
     if (!food) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND, '辅食不存在');
     return food;

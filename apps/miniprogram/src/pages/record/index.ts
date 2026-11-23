@@ -3,31 +3,40 @@ import {
   ALLERGY_CONCLUSION_LABELS, ALLERGY_SYMPTOMS, DIAPER_TYPE_LABELS, FEEDING_TYPE_LABELS, OBSERVATION_STATE_LABELS,
   SLEEP_TYPE_LABELS, componentsForFeeding, exerciseDefaults, feedingTypeForComponents, scoreAllergyObservations,
   type FoodAllergyObservations, type FoodAllergySymptom, type ObservationState, type AllergyConclusion, type FeedingComponent,
-  type FoodVo, type ExerciseConfigVo, type SupplementConfigVo, type SleepVo, type PaginatedResult, type GrowthRecordVo,
+  type FoodVo, type TemperatureVo, type ExerciseConfigVo, type SupplementConfigVo, type SleepVo, type PaginatedResult, type GrowthRecordVo,
 } from '@baby-record/shared';
-import { api, babyContext, currentBabyId, explain, report } from '../../lib/api';
+import { api, babyContext, explain, isCurrentBaby, report } from '../../lib/api';
 import { confirm, dateString, dateTime, timeString } from '../../lib/format';
 import { recordKinds } from '../../lib/timeline';
 
 const other = [
-  { kind: 'supplement', label: '💊 补剂' }, { kind: 'foodAllergy', label: '🔎 辅食排敏' },
-  { kind: 'activity', event: '运动', label: '🤸 运动' }, { kind: 'activity', event: '洗澡', label: '🛁 洗澡' },
-  { kind: 'activity', event: '其他', label: '✨ 其他' }, { kind: 'growth', metric: 'height', label: '📏 身高' },
-  { kind: 'growth', metric: 'weight', label: '⚖️ 体重' },
+  { kind: 'supplement', icon: '💊', label: '补剂' }, { kind: 'foodAllergy', icon: '🔎', label: '辅食排敏' },
+  { kind: 'activity', event: '运动', icon: '🤸', label: '运动' }, { kind: 'activity', event: '洗澡', icon: '🛁', label: '洗澡' },
+  { kind: 'activity', event: '其他', icon: '✨', label: '其他' }, { kind: 'growth', metric: 'height', icon: '📏', label: '身高' },
+  { kind: 'growth', metric: 'weight', icon: '⚖️', label: '体重' },
 ];
+const timePresets = [{ minutes: 0, label: '现在' }, { minutes: 5, label: '5 分钟前' },
+  { minutes: 10, label: '10 分钟前' }, { minutes: 30, label: '30 分钟前' }];
+const recordTitles: Record<string, string> = { feeding: '喂养记录', diaper: '纸尿裤记录', sleep: '睡眠记录', temperature: '记录体温' };
+const icons: Record<string, string> = {
+  BREAST_MILK: '🤱', FORMULA: '🍼', COMPLEMENTARY_FOOD: '🥣', PEE: '💧', POOP: '💩', BOTH: '💧💩', DAYTIME: '☀️', NIGHT: '🌙',
+};
+const milkOptions = Array.from({ length: 31 }, (_, index) => index * 10 + ' ml');
+const temperatureDegrees = [36, 37, 38, 39, 40, 41];
+const temperatureDecimals = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const timestamps: Record<string, string> = {
   feeding: 'feedingTime', temperature: 'measureTime', diaper: 'changeTime', sleep: 'startTime', supplement: 'takeTime',
   activity: 'eventTime', foodAllergy: 'exposureTime', growth: 'measureTime',
 };
 const blankObservations = () => Object.fromEntries(ALLERGY_SYMPTOMS.map((item) => [item.key, 'UNOBSERVED'])) as FoodAllergyObservations;
-const labelOptions = (options: Record<string, string>) => Object.entries(options).map(([value, label]) => ({ value, label }));
+const labelOptions = (options: Record<string, string>) => Object.entries(options).map(([value, label]) => ({ value, label, icon: icons[value] ?? '' }));
 function sleepTypeFor(value: Date) {
   const minutes = value.getHours() * 60 + value.getMinutes();
   return minutes >= 360 && minutes <= 1080 ? 'DAYTIME' : 'NIGHT';
 }
 
 type RecordValue = {
-  babyId: number; endTime?: string; feedingType?: FeedingComponent | 'MIXED'; components?: FeedingComponent[];
+  babyId: string; endTime?: string; feedingType?: FeedingComponent | 'MIXED'; components?: FeedingComponent[];
   foods?: FoodVo[]; food?: FoodVo; foodId?: number; name?: string; exerciseTypes?: string[];
   observations?: FoodAllergyObservations; [key: string]: unknown;
 };
@@ -36,31 +45,34 @@ const selectedOptions = <T, K>(items: T[], selected: K[], key: (item: T) => K): 
   items.map((item) => ({ ...item, selected: selected.includes(key(item)) }));
 
 Page({
-  onShow() { applyAppearance(this); },
+  onShow() { applyAppearance(this, 'detail'); },
   data: {
-    kind: '', recordId: 0, babyId: 0, parent: '', ready: false, busy: false, error: '',
+    kind: '', title: '', otherIndex: 0, recordId: 0, babyId: '', parent: '', ready: false, busy: false, error: '',
     date: dateString(), time: timeString(), today: dateString(), endDate: dateString(), endTime: timeString(),
-    ongoing: null as SleepVo | null, sleepMode: 'quick', presets: [30, 60, 90, 120],
-    typeOptions: [] as { value: string; label: string }[], type: '', isMilk: true, hasFood: false,
+    ongoing: null as SleepVo | null, sleepMode: 'quick', presets: [{ minutes: 30, label: '30 分钟' }, { minutes: 60, label: '1 小时' }, { minutes: 90, label: '1.5 小时' }, { minutes: 120, label: '2 小时' }],
+    timePresets, milkOptions, temperatureDegrees, temperatureDecimals,
+    typeOptions: [] as ReturnType<typeof labelOptions>, type: '', isMilk: true, hasFood: false,
     feedingComponents: ['BREAST_MILK'] as FeedingComponent[], componentLabels: labelOptions(FEEDING_TYPE_LABELS).filter((item) => item.value !== 'MIXED'),
-    amountMl: '120', durationMinutes: '', temperature: '36.5', remark: '', height: '', weight: '', headCircumference: '',
+    amountMl: '120', durationMinutes: '', temperature: '36.5', degrees: 36, decimal: 5, remark: '', height: '', weight: '', headCircumference: '',
     originalFoodId: 0,
     foodIds: [] as number[], foods: [] as FoodVo[], foodOptions: [] as string[], foodId: 0, foodName: '',
     includeSupplements: false, supplementIds: [] as number[], supplements: [] as SupplementConfigVo[], name: '',
-    supplementNames: [] as string[], amount: '', unit: '', eventType: '运动', metric: '',
+    amount: '', unit: '', eventType: '运动', metric: '',
     description: '', exercises: [] as ExerciseConfigVo[], exerciseTypes: [] as string[],
     observations: blankObservations(), symptoms: ALLERGY_SYMPTOMS,
     observationStates: labelOptions(OBSERVATION_STATE_LABELS), conclusionLabels: labelOptions(ALLERGY_CONCLUSION_LABELS),
     suggested: '', urgent: false, finalConclusion: '', other,
   },
+  back() { wx.navigateBack(); },
   async onLoad(query: { kind?: string; id?: string }) {
     this.setData({ parent: query.kind === 'other' ? 'other' : '', recordId: Number(query.id) || 0 });
     await this.loadKind(query.kind === 'other' ? 'supplement' : query.kind || 'feeding');
   },
   async chooseOther(event: WxEvent) {
-    if (this.data.busy || !this.data.ready) return;
-    const option = other[Number(event.currentTarget.dataset.index)];
-    this.setData({ eventType: option.event ?? '运动', metric: option.metric ?? '', remark: '', name: '', amount: '', unit: '',
+    if (this.data.busy || (!this.data.ready && !this.data.error)) return;
+    const otherIndex = Number(event.currentTarget.dataset.index);
+    const option = other[otherIndex];
+    this.setData({ otherIndex, eventType: option.event ?? '运动', metric: option.metric ?? '', remark: '', name: '', amount: '', unit: '',
       description: '', supplementIds: [], exerciseTypes: [], height: '', weight: '', headCircumference: '' });
     await this.loadKind(option.kind);
   },
@@ -75,17 +87,18 @@ Page({
       typeOptions: kind === 'sleep' ? labelOptions(SLEEP_TYPE_LABELS) : kind === 'diaper' ? labelOptions(DIAPER_TYPE_LABELS) : [],
       type: kind === 'sleep' ? sleepTypeFor(now) : kind === 'diaper' ? 'BOTH' : '',
     });
-    if (!this.data.parent) wx.setNavigationBarTitle({ title: (id ? '编辑' : '记录') + definition.label });
+    this.setData({ title: this.data.parent ? '其他记录' : id ? '编辑' + definition.label : recordTitles[kind] ?? definition.label + '记录' });
     try {
       const baby = (await babyContext())?.baby;
       if (!baby) return;
-      const [record, foods, supplements, exercises, sleeps, latestGrowth] = await Promise.all([
+      const [record, foods, supplements, exercises, sleeps, latestGrowth, latestTemperature] = await Promise.all([
         id ? api<RecordValue>(definition.path + '/' + id) : Promise.resolve(null),
         kind === 'feeding' || kind === 'foodAllergy' ? api<FoodVo[]>('/foods') : Promise.resolve([]),
         kind === 'feeding' || kind === 'supplement' ? api<SupplementConfigVo[]>('/supplement-configs') : Promise.resolve([]),
         kind === 'activity' ? api<ExerciseConfigVo[]>('/exercise-configs') : Promise.resolve([]),
         kind === 'sleep' && !id ? api<PaginatedResult<SleepVo>>('/sleeps', 'GET', { babyId: baby.id, ongoing: true, pageSize: 1 }) : Promise.resolve(null),
         kind === 'growth' && !id ? api<GrowthRecordVo | null>('/growths/latest', 'GET', { babyId: baby.id }) : Promise.resolve(null),
+        kind === 'temperature' && !id ? api<TemperatureVo | null>('/temperatures/latest', 'GET', { babyId: baby.id }) : Promise.resolve(null),
       ]);
       if (record && record.babyId !== baby.id) throw new Error('请切换到该记录所属的宝宝');
       for (const food of record?.foods ?? (record?.food ? [record.food] : [])) {
@@ -94,17 +107,19 @@ Page({
       const existingExerciseTypes = record?.exerciseTypes ?? [];
       this.setData({
         babyId: baby.id, foods, foodOptions: foods.map((item) => (item.emoji ? item.emoji + ' ' : '') + item.name),
-        supplements, supplementNames: supplements.map((item) => item.name),
+        supplements,
         exercises: [...exercises, ...existingExerciseTypes.filter((name) => !exercises.some((item) => item.name === name))
           .map((name, index) => ({ id: -index - 1, name, emoji: null, isActive: false, updatedTime: '', createdTime: '',
             defaultAmount: String(record?.amount ?? ''), defaultUnit: (record?.unit ?? '分钟') as ExerciseConfigVo['defaultUnit'] }))],
         ongoing: sleeps?.list?.[0] ?? null,
+        ongoingSince: sleeps?.list?.[0] ? timeString(sleeps.list[0].startTime) : '',
         height: this.data.metric !== 'weight' ? String(latestGrowth?.height ?? '') : '',
         weight: this.data.metric !== 'height' ? String(latestGrowth?.weight ?? '') : '',
         endDate: dateString(now), endTime: timeString(now),
       });
       if (kind === 'sleep' && !id) this.setData({ date: dateString(start), time: timeString(start) });
       if (record) this.fill(record);
+      if (kind === 'temperature') this.setTemperature(String(record?.temperature ?? latestTemperature?.temperature ?? '36.5'));
       this.updateOptions();
       this.score();
       this.setData({ ready: true });
@@ -153,6 +168,23 @@ Page({
     const key = String(event.currentTarget.dataset.key);
     this.setData({ [key]: event.detail.value });
   },
+  presetTime(event: WxEvent) {
+    const value = new Date(Date.now() - Number(event.currentTarget.dataset.minutes) * 60_000);
+    this.setData({ date: dateString(value), time: timeString(value) });
+  },
+  chooseMilk(event: WxInput) { this.setData({ amountMl: String(Number(event.detail.value) * 10) }); },
+  setTemperature(value: string) {
+    const [whole, fraction] = Number(value).toFixed(1).split('.');
+    this.setData({ temperature: whole + '.' + fraction, degrees: Number(whole), decimal: Number(fraction) });
+  },
+  chooseTemperature(event: WxInput) {
+    const [degrees, decimal = '0'] = this.data.temperature.split('.');
+    const index = Number(event.detail.value);
+    const value = event.currentTarget.dataset.part === 'degree'
+      ? temperatureDegrees[index] + '.' + (temperatureDegrees[index] === 41 ? '0' : decimal)
+      : degrees + '.' + index;
+    this.setTemperature(value);
+  },
   pickValue(event: WxEvent) {
     const { key, value } = event.currentTarget.dataset;
     this.setData({ [String(key)]: value });
@@ -185,8 +217,8 @@ Page({
     const food = this.data.foods[Number(event.detail.value)];
     if (food) this.setData({ foodId: food.id, foodName: food.name });
   },
-  chooseSupplement(event: WxInput) {
-    const supplement = this.data.supplements[Number(event.detail.value)];
+  chooseSupplement(event: WxEvent) {
+    const supplement = this.data.supplements[Number(event.currentTarget.dataset.index)];
     if (supplement) this.setData({ name: supplement.name, amount: supplement.defaultAmount ?? '', unit: supplement.defaultUnit ?? '' });
   },
   toggleSupplements() { this.setData({ includeSupplements: !this.data.includeSupplements }); },
@@ -201,7 +233,7 @@ Page({
   },
   async sleepAction(event: WxEvent) {
     const { babyId, type, ongoing, busy, ready } = this.data;
-    if (busy || !ready || currentBabyId() !== babyId) return;
+    if (busy || !ready || !isCurrentBaby(babyId)) return;
     const action = event.currentTarget.dataset.action;
     this.setData({ busy: true });
     try {
@@ -220,7 +252,7 @@ Page({
   },
   async submit() {
     const d = this.data;
-    if (d.busy || !d.ready || currentBabyId() !== d.babyId) return;
+    if (d.busy || !d.ready || !isCurrentBaby(d.babyId)) return;
     const definition = recordKinds.find((item) => item.kind === d.kind);
     if (!definition) return;
     this.setData({ busy: true });

@@ -11,7 +11,7 @@ const exercises = [
   ['踢腿', '🦵', '分钟'], ['抓握', '✋', '次'], ['爬行', '🐾', '分钟'], ['练习坐', '🪑', '分钟'],
 ];
 
-export async function initializeBabyConfigs(db: Prisma.TransactionClient, babyId: number) {
+export async function initializeBabyConfigs(db: Prisma.TransactionClient, babyId: string) {
   await db.food.createMany({ data: foods.map((name) => ({ babyId, name })), skipDuplicates: true });
   await db.supplementConfig.createMany({
     data: supplements.map(([name, emoji, defaultUnit]) => ({ babyId, name, emoji, defaultUnit, defaultAmount: '1' })),

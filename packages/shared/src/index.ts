@@ -133,8 +133,11 @@ export interface AgeInfo {
 }
 
 // ============ 实体 VO ============
+/** 宝宝对外 ID：16 位小写十六进制随机码 */
+export type BabyId = string;
+
 export interface BabyVo {
-  id: number;
+  id: BabyId;
   name: string;
   nickname: string | null;
   gender: Gender;
@@ -166,7 +169,7 @@ export interface RecordCreator {
 
 export interface FeedingVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   feedingTime: string;
   feedingType: FeedingType;
   components: FeedingComponent[];
@@ -221,7 +224,7 @@ export function exerciseDefaults<T extends { defaultAmount: string; defaultUnit:
 
 export interface FoodAllergyRecordVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   foodId: number;
   food: FoodVo;
   exposureTime: string;
@@ -240,7 +243,7 @@ export interface FoodAllergyRecordVo {
 
 export interface DiaperVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   changeTime: string;
   type: DiaperType;
   remark: string | null;
@@ -252,7 +255,7 @@ export interface DiaperVo {
 
 export interface SleepVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   startTime: string;
   endTime: string | null;
   durationMinutes: number | null;
@@ -267,7 +270,7 @@ export interface SleepVo {
 
 export interface SupplementVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   name: string;
   amount: string | null;
   unit: string | null;
@@ -284,7 +287,7 @@ export interface ActivityVo {
   amount: string | null;
   unit: ExerciseUnit | null;
   id: number;
-  babyId: number;
+  babyId: BabyId;
   eventType: string;
   eventTime: string;
   description: string | null;
@@ -437,7 +440,7 @@ export interface ChartResult {
 // ============ 体温 ============
 export interface TemperatureVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   temperature: number;
   measureTime: string;
   remark: string | null;
@@ -467,7 +470,7 @@ export const TEMP_STATUS_LABEL: Record<TempStatus, string> = {
 // ============ 身高体重成长记录 ============
 export interface GrowthRecordVo {
   id: number;
-  babyId: number;
+  babyId: BabyId;
   /** 身高(cm)，可空（当次可只记体重） */
   height: number | null;
   /** 体重(kg)，可空（当次可只记身高） */
@@ -564,7 +567,7 @@ export interface FamilyMember {
 }
 
 export interface FamilyApplication {
-  babyId: number;
+  babyId: BabyId;
   name: string;
   role: UserRole;
   status: Exclude<MembershipStatus, 'APPROVED'>;

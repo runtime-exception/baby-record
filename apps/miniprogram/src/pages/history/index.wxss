@@ -1,2 +1,28 @@
 .sheetBackdrop { position: fixed; z-index: 20; inset: 0; display: flex; align-items: flex-end; background: #16223372; }
 .sheet { width: 100%; margin: 0; padding-bottom: calc(36rpx + env(safe-area-inset-bottom)); border-radius: 40rpx 40rpx 0 0; }
+.rangePanel { margin-top: 30rpx; }
+.rangePanel .dateRange { margin: 12rpx 0 18rpx; }
+.filterScroll { width: 100%; white-space: nowrap; }
+.filters { display: inline-flex; gap: 14rpx; }
+.filters .chip { flex: none; padding: 10rpx 22rpx; color: var(--muted); font-size: calc(var(--font, 30rpx) - 8rpx); }
+.filters .selected { color: #fff; background: var(--accent); }
+.timeline { margin-top: 30rpx; }
+.timelineRow { display: flex; gap: 18rpx; margin-bottom: 22rpx; --dot: #55b861; }
+.timelineRow.feeding { --dot: #ef9a39; }
+.timelineRow.diaper { --dot: #4487ee; }
+.timelineRow.sleep { --dot: #ab61dd; }
+.timelineRow.temperature { --dot: #e64968; }
+.timelineRail { width: 98rpx; flex: none; display: flex; flex-direction: column; align-items: center; padding-top: 8rpx; }
+.timelineRail::after { content: ''; background: var(--line); flex: 1; width: 3rpx; margin: 6rpx 0 -12rpx; }
+.timelineRow:last-child .timelineRail::after { display: none; }
+.dayBadge { border-radius: 16rpx; background: var(--input); padding: 4rpx 7rpx; font-size: calc(var(--font, 30rpx) - 11rpx); white-space: nowrap; }
+.timelineTime, .timelineDetail { font-size: calc(var(--font, 30rpx) - 7rpx); color: var(--muted); }
+.timelineTime { margin: 6rpx 0 9rpx; font-variant-numeric: tabular-nums; }
+.timelineDot { width: 18rpx; height: 18rpx; border-radius: 50%; background: var(--dot); }
+.timelineCard { flex: 1; min-width: 0; background: var(--card); padding: 24rpx 26rpx; border-radius: 30rpx; }
+.recordTitle { min-width: 0; overflow-wrap: break-word; font-size: calc(var(--font, 30rpx) - 3rpx); font-weight: 600; }
+.recordIcon { font-size: 32rpx; margin-right: 12rpx; }
+.recordActions { display: flex; gap: 20rpx; flex: none; }
+.recordActions button { width: 54rpx; color: var(--muted); font-size: calc(var(--font, 30rpx) - 7rpx); }
+.recordActions .deleteAction { color: #e64968; }
+.timelineDetail { margin-top: 8rpx; }

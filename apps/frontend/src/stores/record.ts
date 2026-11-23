@@ -19,7 +19,7 @@ export const useRecordStore = defineStore('record', () => {
   }, { flush: 'sync' });
 
   /** 检查是否有进行中的睡眠 */
-  async function checkOngoing(babyId: number) {
+  async function checkOngoing(babyId: string) {
     const previousScope = scope;
     const check = ++activeCheck;
     const res = await sleepApi.list({ babyId, ongoing: true, page: 1, pageSize: 1 });

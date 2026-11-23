@@ -16,12 +16,12 @@ export interface CreateBabyPayload {
 
 export const babyApi = {
   list: () => http.get<MemberBaby[]>('/babies'),
-  detail: (id: number) => http.get<BabyVo>(`/babies/${id}`),
-  create: (data: CreateBabyPayload & { memberName: string; role: UserRole }) => http.post<BabyVo>('/babies', data),
-  uploadAvatar: (id: number, file: File) => {
+  detail: (id: string) => http.get<BabyVo>(`/babies/${id}`),
+  create: (data: CreateBabyPayload & { memberName?: string; role: UserRole }) => http.post<BabyVo>('/babies', data),
+  uploadAvatar: (id: string, file: File) => {
     const body = new FormData();
     body.append('file', file);
     return http.post<BabyVo>(`/babies/${id}/avatar`, body);
   },
-  update: (id: number, data: Partial<CreateBabyPayload>) => http.patch<BabyVo>(`/babies/${id}`, data),
+  update: (id: string, data: Partial<CreateBabyPayload>) => http.patch<BabyVo>(`/babies/${id}`, data),
 };

@@ -1,0 +1,49 @@
+  <view class="panel rangePanel">
+    <view class="muted">时间范围</view>
+    <view class="dateRange">
+      <picker mode="date" value="{{startDate}}" end="{{today}}" data-field="start" bindchange="chooseDate">
+        <view class="dateValue"><text>{{startDate}}</text><view class="dateGlyph"></view></view>
+      </picker>
+      <text class="muted">至</text>
+      <picker mode="date" value="{{endDate}}" start="{{startDate}}" end="{{today}}" data-field="end" bindchange="chooseDate">
+        <view class="dateValue"><text>{{endDate}}</text><view class="dateGlyph"></view></view>
+      </picker>
+    </view>
+    <scroll-view scroll-x class="filterScroll">
+      <view class="filters">
+        <button class="chip {{selected === 'all' ? 'selected' : ''}}" data-kind="all" bindtap="chooseFilter">全部</button>
+        <button wx:for="{{filters}}" wx:key="kind" class="chip {{selected === item.kind ? 'selected' : ''}}" data-kind="{{item.kind}}" bindtap="chooseFilter">{{item.label}}</button>
+      </view>
+    </scroll-view>
+  </view>
+  <view class="empty" wx:if="{{loading}}">加载中…</view>
+  <button class="error" wx:elif="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+  <view class="empty" wx:elif="{{!filtered.length}}">暂无记录</view>
+  <view wx:else class="timeline">
+    <view wx:for="{{filtered}}" wx:key="key" class="timelineRow {{item.kind}}">
+      <view class="timelineRail">
+        <view wx:if="{{item.dateLabel}}" class="dayBadge">{{item.dateLabel}}</view>
+        <view class="timelineTime">{{item.time}}</view><view class="timelineDot"></view>
+      </view>
+      <view class="timelineCard" data-key="{{item.key}}" bindtap="view">
+        <view class="row">
+          <view class="recordTitle"><text class="recordIcon">{{item.icon}}</text>{{item.label}}</view>
+          <view class="recordActions">
+            <button class="textAction" data-key="{{item.key}}" catchtap="edit">编辑</button>
+            <button class="textAction deleteAction" data-key="{{item.key}}" catchtap="remove">删除</button>
+          </view>
+        </view>
+        <view wx:if="{{item.detail || item.creator}}" class="timelineDetail">{{item.detail}}<text wx:if="{{item.detail && item.creator}}"> · </text>{{item.creator}}</view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{detail}}" class="sheetBackdrop" bindtap="close">
+    <view class="sheet panel" catchtap="viewSheet">
+      <view class="row"><view class="title">{{detail.icon}} {{detail.label}}</view><button bindtap="close">关闭</button></view>
+      <view class="line">{{detail.date}} {{detail.time}}</view>
+      <view class="line" wx:if="{{detail.detail}}">{{detail.detail}}</view>
+      <view class="line" wx:if="{{detail.creator}}">添加人 {{detail.creator}}</view>
+      <view class="line" wx:if="{{detail.remark}}">备注 {{detail.remark}}</view>
+      <view class="row section"><button bindtap="edit">编辑</button><button class="danger" bindtap="remove">删除</button></view>
+    </view>
+  </view>

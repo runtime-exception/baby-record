@@ -12,7 +12,7 @@ import { GrowthStandardsService } from './growth-standards.service';
 
 export interface GrowthVo {
   id: number;
-  babyId: number;
+  babyId: string;
   height: number | null;
   weight: number | null;
   headCircumference: number | null;
@@ -67,7 +67,7 @@ export class GrowthService {
   }
 
   /** 最新一次测量（供首页展示，任一身高/体重） */
-  async findLatest(babyId: number): Promise<GrowthVo | null> {
+  async findLatest(babyId: string): Promise<GrowthVo | null> {
     const record = await this.prisma.growthRecord.findFirst({
       where: { babyId },
       orderBy: { measureTime: 'desc' },
@@ -105,7 +105,7 @@ export class GrowthService {
    * 身高/体重趋势：宝宝实测 + 同龄参考高位 P97 + 参考低位 P3，
    * 每个测量点附带所处区间百分比；无参考覆盖（>60 月龄）时参考值为 null。
    */
-  async trend(babyId: number, metric: 'height' | 'weight') {
+  async trend(babyId: string, metric: 'height' | 'weight') {
     const baby = await this.prisma.baby.findUnique({
       where: { id: babyId },
       select: { gender: true, birthday: true },
@@ -148,7 +148,7 @@ export class GrowthService {
     };
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });

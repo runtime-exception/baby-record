@@ -1,15 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsOptional } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString, Matches } from 'class-validator';
+import { BABY_ID_PATTERN } from '../utils/baby-id.util';
 
 /**
  * 统计/图表通用查询参数：宝宝ID + 时间范围
  */
 export class StatsQueryDto {
   @ApiProperty({ description: '宝宝ID' })
-  @Type(() => Number)
-  @IsInt()
-  babyId: number;
+  @IsString()
+  @Matches(BABY_ID_PATTERN, { message: '宝宝 ID 必须是 16 位十六进制字符' })
+  babyId: string;
 
   @ApiPropertyOptional({ enum: ['today', '7d', '30d', 'custom'], default: 'today', description: '时间范围' })
   @IsOptional()

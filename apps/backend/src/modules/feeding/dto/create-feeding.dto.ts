@@ -1,13 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { FeedingType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { ArrayUnique, IsArray, IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { ArrayUnique, IsArray, IsDateString, IsEnum, IsInt, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { BABY_ID_PATTERN } from '../../../common/utils/baby-id.util';
 
 export class CreateFeedingDto {
   @ApiProperty({ description: '宝宝ID' })
-  @Type(() => Number)
-  @IsInt()
-  babyId: number;
+  @IsString()
+  @Matches(BABY_ID_PATTERN, { message: '宝宝 ID 必须是 16 位十六进制字符' })
+  babyId: string;
 
   @ApiProperty({ enum: FeedingType, example: FeedingType.FORMULA, description: '喂养类型' })
   @IsEnum(FeedingType)

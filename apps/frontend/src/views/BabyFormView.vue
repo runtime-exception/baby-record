@@ -21,7 +21,6 @@ const isEdit = computed(() => route.name === 'baby-edit');
 const title = computed(() => (isEdit.value ? '编辑宝宝' : '新增宝宝'));
 
 const name = ref('');
-const memberName = ref('');
 const role = ref<UserRole>('DAD');
 const nickname = ref('');
 const gender = ref<Gender>('MALE');
@@ -63,10 +62,6 @@ async function onSubmit() {
     message.warning('请输入宝宝姓名');
     return;
   }
-  if (!isEdit.value && !memberName.value.trim()) {
-    message.warning('请输入你的显示名称');
-    return;
-  }
   const baby = babyStore.currentBaby;
   submitting.value = true;
   try {
@@ -87,7 +82,7 @@ async function onSubmit() {
       await babyStore.loadBabies();
       router.push('/profile');
     } else {
-      const created = await babyApi.create({ ...payload, memberName: memberName.value.trim(), role: role.value });
+      const created = await babyApi.create({ ...payload, role: role.value });
       await babyStore.loadBabies();
       babyStore.setCurrentBaby(created.id);
       message.success('宝宝已添加');
@@ -106,8 +101,6 @@ async function onSubmit() {
     <AppHeader :title="title" show-back />
     <div class="mx-auto max-w-app px-5 mt-4 space-y-3 pb-8">
       <div v-if="!isEdit" class="space-y-2 rounded-3xl bg-ios-card p-4 shadow-card">
-        <label for="member-name" class="text-sm">你的显示名称</label>
-        <input id="member-name" v-model="memberName" maxlength="40" class="block w-full rounded-xl bg-ios-bg p-2" />
         <label for="member-role" class="text-sm">你与宝宝的关系</label>
         <select id="member-role" v-model="role" class="block w-full rounded-xl bg-ios-bg p-2">
           <option v-for="(label, key) in USER_ROLE_LABELS" :key="key" :value="key">{{ label }}</option>

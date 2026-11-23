@@ -11,7 +11,7 @@ import { QueryDiaperDto } from './dto/query-diaper.dto';
 
 export interface DiaperVo {
   id: number;
-  babyId: number;
+  babyId: string;
   changeTime: string;
   type: string;
   remark: string | null;
@@ -75,7 +75,7 @@ export class DiaperService {
     await this.prisma.diaper.delete({ where: { id } });
   }
 
-  async findByRange(babyId: number, start: Date, end: Date): Promise<Diaper[]> {
+  async findByRange(babyId: string, start: Date, end: Date): Promise<Diaper[]> {
     return this.prisma.diaper.findMany({
       where: { babyId, changeTime: { gte: start, lte: end } },
       orderBy: { changeTime: 'desc' },
@@ -92,7 +92,7 @@ export class DiaperService {
     return where;
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });

@@ -18,14 +18,14 @@ export class RecordService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 查询某天全部记录 */
-  async findDaily(babyId: number, date: string) {
+  async findDaily(babyId: string, date: string) {
     if (!date) throw new BusinessException(ErrorCode.PARAM_MISSING, 'date 不能为空');
     const { start, end } = DateRangeUtil.day(date);
     return this.collect(babyId, start, end);
   }
 
   /** 查询时间范围内全部记录 */
-  async findRange(babyId: number, startDate: string, endDate: string) {
+  async findRange(babyId: string, startDate: string, endDate: string) {
     if (!startDate || !endDate) {
       throw new BusinessException(ErrorCode.PARAM_MISSING, 'startDate 与 endDate 不能为空');
     }
@@ -33,7 +33,7 @@ export class RecordService {
     return this.collect(babyId, range.start, range.end);
   }
 
-  private async collect(babyId: number, start: Date, end: Date) {
+  private async collect(babyId: string, start: Date, end: Date) {
     const includeCreator = {
       creator: { select: { id: true, name: true, role: true } },
     } as const;

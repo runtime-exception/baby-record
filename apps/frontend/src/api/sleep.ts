@@ -2,7 +2,7 @@ import { http } from '@/utils/request';
 import type { SleepVo, SleepType, PaginatedResult } from '@baby-record/shared';
 
 export interface SleepQuery {
-  babyId: number;
+  babyId: string;
   startDate?: string;
   endDate?: string;
   sleepType?: SleepType;
@@ -12,7 +12,7 @@ export interface SleepQuery {
 }
 
 export interface CreateSleepPayload {
-  babyId: number;
+  babyId: string;
   sleepType?: SleepType;
   startTime: string;
   endTime?: string;
@@ -21,7 +21,7 @@ export interface CreateSleepPayload {
 }
 
 export interface StartSleepPayload {
-  babyId: number;
+  babyId: string;
   sleepType?: SleepType;
   startTime?: string;
   remark?: string;

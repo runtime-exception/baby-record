@@ -2,6 +2,7 @@
   "pages": [
     "pages/home/index",
     "pages/history/index",
+    "pages/history-detail/index",
     "pages/statistics/index",
     "pages/profile/index",
     "pages/login/index",

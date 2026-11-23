@@ -1,21 +1,69 @@
 <page-meta page-style="{{appearanceStyle}}" />
-<view class="screen" wx:if="{{ready}}">
-  <view class="panel" wx:if="{{!editing}}">
-    <view class="title">你的身份</view>
-    <view class="field"><text class="fieldTitle">显示名称</text><input maxlength="40" value="{{memberName}}" bindinput="setName" placeholder="请输入你的名称" /></view>
-    <view class="field"><text class="fieldTitle">你与宝宝的关系</text><picker range="{{labels}}" bindchange="setRole">{{roleLabel || '请选择'}}</picker></view>
+<view class="screen tabScreen">
+  <view class="detailHeader">
+    <button class="backButton" aria-label="返回" bindtap="back"><view class="backChevron"></view></button>
+    <view class="heading">{{editing ? '编辑宝宝' : '添加宝宝'}}</view>
   </view>
-  <view class="panel">
-    <view class="title">宝宝资料</view>
-    <view class="field" wx:for="{{fields}}" wx:key="key">
-      <text class="fieldTitle">{{item.label}}</text>
-      <input type="{{item.type}}" value="{{values[item.key]}}" data-key="{{item.key}}" bindinput="field" placeholder="{{item.required ? '请输入' : '选填'}}" />
+  <view class="empty" wx:if="{{!ready}}">正在加载宝宝资料…</view>
+  <block wx:else>
+    <view class="panel row babyIdRow" wx:if="{{editing}}">
+      <view class="babyIdLine"><text class="muted">宝宝 ID</text><text class="babyIdValue">{{editing}}</text></view>
+      <button class="textAction" bindtap="copyId">复制</button>
     </view>
-    <view class="field"><text class="fieldTitle">性别</text><view class="chips">
-      <button class="chip {{gender === 'MALE' ? 'selected' : ''}}" data-value="MALE" bindtap="setGender">男宝</button>
-      <button class="chip {{gender === 'FEMALE' ? 'selected' : ''}}" data-value="FEMALE" bindtap="setGender">女宝</button>
-    </view></view>
-    <view class="field"><text class="fieldTitle">出生日期</text><picker mode="date" end="{{today}}" value="{{birthday}}" bindchange="setBirthday">{{birthday}}</picker></view>
-    <button class="primary section" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">保存</button>
+    <view class="panel">
+      <text class="fieldTitle">姓名</text><input value="{{values.name}}" data-key="name" bindinput="field" placeholder="请输入宝宝姓名" />
+    </view>
+    <view class="panel">
+      <text class="fieldTitle">昵称</text><input value="{{values.nickname}}" data-key="nickname" bindinput="field" placeholder="选填" />
+    </view>
+    <view class="panel">
+      <text class="fieldTitle">性别</text>
+      <view class="segment">
+        <button class="{{gender === 'MALE' ? 'current' : ''}}" data-value="MALE" bindtap="setGender">男宝</button>
+        <button class="{{gender === 'FEMALE' ? 'current' : ''}}" data-value="FEMALE" bindtap="setGender">女宝</button>
+      </view>
+    </view>
+    <view class="panel">
+      <text class="fieldTitle">出生日期</text><picker mode="date" end="{{today}}" value="{{birthday}}" bindchange="setBirthday">{{birthday}}</picker>
+    </view>
+    <view class="panel birthMetrics">
+      <view wx:for="{{measurements}}" wx:key="key">
+        <text class="fieldTitle">{{item.label}}</text>
+        <input type="digit" value="{{values[item.key]}}" data-key="{{item.key}}" bindinput="field" placeholder="{{item.placeholder}}" />
+      </view>
+    </view>
+    <view class="panel">
+      <text class="fieldTitle">出生医院</text><input value="{{values.birthHospital}}" data-key="birthHospital" bindinput="field" placeholder="选填" />
+    </view>
+    <view class="panel">
+      <text class="fieldTitle">备注</text><textarea value="{{values.remark}}" data-key="remark" bindinput="field" placeholder="选填" />
+    </view>
+    <view class="panel" wx:if="{{!editing}}">
+      <text class="fieldTitle">你与宝宝的关系</text>
+      <picker class="identityPicker" range="{{labels}}" bindchange="setRole">{{roleLabel || '请选择与宝宝的关系'}}</picker>
+    </view>
+    <button class="primary section saveBaby" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">{{editing ? '保存修改' : '添加宝宝'}}</button>
+    <button class="danger deleteBaby" wx:if="{{editing}}" bindtap="askDelete">删除宝宝</button>
+  </block>
+  <view wx:if="{{deleteOpen}}" class="sheetBackdrop" bindtap="closeDelete">
+    <view class="deleteSheet" catchtap="noop">
+      <view class="deleteTitle">删除宝宝</view>
+      <view class="deleteBabyInfo">
+        <view class="row">
+          <text class="deleteBabyName">{{deleteInfo.displayName}}</text>
+          <text class="deleteGender">{{deleteInfo.genderLabel}}</text>
+        </view>
+        <view class="muted">出生 {{deleteInfo.birthday}}</view>
+      </view>
+      <view class="deleteWarning">删除后，所有记录同步删除不可恢复</view>
+      <view class="deleteActions">
+        <button
+          class="deleteConfirm {{deleteCountdown > 0 ? 'pending' : ''}}"
+          disabled="{{deleteCountdown > 0 || deleting}}"
+          bindtap="confirmDelete"
+        >{{deleteCountdown > 0 ? '删除（' + deleteCountdown + 's）' : '删除'}}</button>
+        <button class="deleteCancel" bindtap="closeDelete">取消</button>
+      </view>
+    </view>
   </view>
 </view>

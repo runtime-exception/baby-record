@@ -2,7 +2,7 @@ import { http } from '@/utils/request';
 import type { ActivityVo, ExerciseUnit, PaginatedResult } from '@baby-record/shared';
 
 export interface ActivityQuery {
-  babyId: number;
+  babyId: string;
   startDate?: string;
   endDate?: string;
   eventType?: string;
@@ -11,7 +11,7 @@ export interface ActivityQuery {
 }
 
 export interface CreateActivityPayload {
-  babyId: number;
+  babyId: string;
   eventType: string;
   exerciseTypes?: string[];
   amount?: string | null;

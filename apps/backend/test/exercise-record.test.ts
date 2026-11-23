@@ -4,6 +4,7 @@ import { ExerciseConfigService } from '../src/modules/exercise-config/exercise-c
 import { PrismaService } from '../src/prisma/prisma.service';
 import { validateExerciseAmount } from '../src/modules/activity/exercise-rules';
 const now = new Date('2026-10-01T08:00:00Z');
+const babyId = 'a1b2c3d4e5f60718';
 const configs = [
   { id: 1, name: '翻身', defaultAmount: '1', defaultUnit: '次', emoji: null, isActive: true, createdTime: now, updatedTime: now },
   { id: 2, name: '抬头', defaultAmount: '1', defaultUnit: '分钟', emoji: null, isActive: true, createdTime: now, updatedTime: now },
@@ -11,7 +12,7 @@ const configs = [
 ];
 const records: any[] = [];
 const prisma = {
-  baby: { findUnique: async () => ({ id: 7 }) }, user: { findUnique: async () => ({ id: 9 }) },
+  baby: { findUnique: async () => ({ id: babyId }) }, user: { findUnique: async () => ({ id: 9 }) },
   exerciseConfig: {
     findMany: async ({ where }: any) => where?.name ? configs.filter(c => where.name.in.includes(c.name)) : where?.isActive ? configs.filter(c => c.isActive) : configs,
     findUnique: async ({ where }: any) => configs.find(c => where.id ? c.id === where.id : c.name === where.babyId_name?.name) ?? null,
@@ -24,7 +25,7 @@ const prisma = {
     update: async ({ where, data }: any) => { const r = records.find(r => r.id === where.id); Object.assign(r, data); return r; },
   },
 } as unknown as PrismaService;
-const base = { babyId: 7, creatorId: 9, eventTime: now.toISOString(), eventType: '运动' };
+const base = { babyId, creatorId: 9, eventTime: now.toISOString(), eventType: '运动' };
 async function main() {
   const service = new ActivityService(prisma), management = new ExerciseConfigService(prisma);
   const a = await service.create({ ...base, exerciseTypes: ['翻身', '抬头', '俯卧'], amount: '2.5', unit: '分钟' });
@@ -36,16 +37,16 @@ async function main() {
   for (const value of ['0', '-1', 'abc', '', 'Infinity']) assert.throws(() => validateExerciseAmount(value, '分钟'));
   assert.throws(() => validateExerciseAmount('1.5', '次')); assert.throws(() => validateExerciseAmount('1', '小时'));
   assert.equal((await service.update(a.id, { amount: '5' })).amount, '5');
-  await management.update(7, 2, { name: '抬头练习', defaultUnit: '秒', defaultAmount: '30' });
-  await management.remove(7, 1);
+  await management.update(babyId, 2, { name: '抬头练习', defaultUnit: '秒', defaultAmount: '30' });
+  await management.remove(babyId, 1);
   assert.deepEqual((await service.update(a.id, { description: '保留快照' })).exerciseTypes, ['翻身', '抬头', '俯卧']);
   assert.equal(records[0].unit, '分钟');
   await assert.rejects(() => service.create({ ...base, exerciseTypes: ['翻身'], amount: '1', unit: '次' }));
-  const c = await management.create(7, { name: '踢腿', defaultAmount: '1', defaultUnit: '分钟' });
-  await management.remove(7, c.id); assert.equal((await management.findAll(7)).some(r => r.id === c.id), false);
-  await management.update(7, c.id, { isActive: true }); assert.equal((await management.findAll(7)).some(r => r.id === c.id), true);
-  await assert.rejects(() => management.create(7, { name: '错误', defaultAmount: '0', defaultUnit: '次' }));
-  await assert.rejects(() => management.update(7, c.id, { defaultAmount: '' }));
+  const c = await management.create(babyId, { name: '踢腿', defaultAmount: '1', defaultUnit: '分钟' });
+  await management.remove(babyId, c.id); assert.equal((await management.findAll(babyId)).some(r => r.id === c.id), false);
+  await management.update(babyId, c.id, { isActive: true }); assert.equal((await management.findAll(babyId)).some(r => r.id === c.id), true);
+  await assert.rejects(() => management.create(babyId, { name: '错误', defaultAmount: '0', defaultUnit: '次' }));
+  await assert.rejects(() => management.update(babyId, c.id, { defaultAmount: '' }));
   records.push({ ...records[0], id: 10, exerciseTypes: ['抬头'], amount: null, unit: null });
   const legacy = await service.update(10, { description: '旧描述' }); assert.equal(legacy.amount, null); assert.equal(legacy.unit, null);
   assert.deepEqual((await service.create({ ...base, eventType: '洗澡' })).exerciseTypes, []);

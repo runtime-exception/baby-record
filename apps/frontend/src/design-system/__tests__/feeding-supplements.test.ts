@@ -30,12 +30,12 @@ const configs = [
 describe('feeding supplement integration', () => {
   it('builds one snapshot payload per selected preset with a shared feeding time', () => {
     expect(buildFeedingSupplementPayloads(configs, [2, 1], {
-      babyId: 7,
+      babyId: 'a1b2c3d4e5f60718',
       creatorId: 9,
       feedingTime: '2026-09-27T10:30:00.000Z',
     })).toEqual([
       {
-        babyId: 7,
+        babyId: 'a1b2c3d4e5f60718',
         creatorId: 9,
         takeTime: '2026-09-27T10:30:00.000Z',
         name: 'DHA',
@@ -43,7 +43,7 @@ describe('feeding supplement integration', () => {
         unit: '粒',
       },
       {
-        babyId: 7,
+        babyId: 'a1b2c3d4e5f60718',
         creatorId: 9,
         takeTime: '2026-09-27T10:30:00.000Z',
         name: '维生素D',

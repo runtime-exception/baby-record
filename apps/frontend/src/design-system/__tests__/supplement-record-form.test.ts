@@ -22,7 +22,7 @@ vi.mock('@/api/growth', () => ({
 vi.mock('@/api/activity', () => ({ activityApi: { create: vi.fn() } }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@/stores/baby', () => ({
-  useBabyStore: () => ({ currentBaby: { id: 7 } }),
+  useBabyStore: () => ({ currentBaby: { id: 'a1b2c3d4e5f60718' } }),
 }));
 vi.mock('@/stores/user', () => ({
   useUserStore: () => ({ currentUser: { id: 9, name: '妈妈', role: 'MOTHER' } }),
@@ -91,7 +91,7 @@ describe('supplement record form', () => {
     await wrapper.get('button[data-testid="save-record"]').trigger('click');
 
     expect(mocks.createSupplement).toHaveBeenCalledWith(expect.objectContaining({
-      babyId: 7,
+      babyId: 'a1b2c3d4e5f60718',
       creatorId: 9,
       name: '维生素D',
       amount: '2',

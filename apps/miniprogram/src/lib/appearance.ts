@@ -16,20 +16,25 @@ export function setAppearance(changes: Partial<Appearance>) {
   wx.setStorageSync(appearanceKey, { ...getAppearance(), ...changes });
 }
 
-export function applyAppearance(page: { setData(data: Record<string, unknown>): void }, tab = false) {
+export function isDarkAppearance(appearance = getAppearance()) {
+  return appearance.mode === 'dark' || (appearance.mode === 'auto' && wx.getAppBaseInfo?.().theme === 'dark');
+}
+
+export function applyAppearance(page: { setData(data: Record<string, unknown>): void }, surface: 'native' | 'tab' | 'detail' = 'native') {
   const appearance = getAppearance();
-  const dark = appearance.mode === 'dark' || (appearance.mode === 'auto' && wx.getAppBaseInfo?.().theme === 'dark');
+  const dark = isDarkAppearance(appearance);
   const colors = dark ? {
-    bg: '#101925', card: '#1b2737', text: '#edf3fc', muted: '#a7b5c9', input: '#253446', line: '#34455b', accent: '#69aaff',
+    bg: '#000000', card: '#1c1c1e', text: '#f2f2f7', muted: '#a1a1aa', input: '#252527', line: '#303033', accent: '#4086f4',
   } : {
     bg: appearance.theme === 'material' ? '#f4f7fc' : '#f2f2f7',
-    card: '#ffffff', text: '#182439', muted: '#64748b', input: '#f2f2f7', line: '#e6ebf2', accent: '#007aff',
+    card: '#ffffff', text: '#18181b', muted: '#66666f', input: '#f2f2f7', line: '#e5e5ea', accent: '#007aff',
   };
   const styles = Object.entries(colors).map(([name, value]) => '--' + name + ':' + value);
   styles.push('--font:' + (appearance.senior ? '36rpx' : '30rpx'));
   styles.push('--radius:' + (appearance.theme === 'material' ? '34rpx' : '46rpx'));
   styles.push('background:' + colors.bg);
+  if (surface !== 'native') styles.push('--status-inset:' + (wx.getWindowInfo().statusBarHeight ?? 20) + 'px');
   page.setData({ appearanceStyle: styles.join(';'), appearance });
-  wx.setNavigationBarColor({ backgroundColor: colors.bg, frontColor: dark ? '#ffffff' : '#000000' });
-  if (tab) wx.setTabBarStyle({ backgroundColor: colors.card, color: colors.muted, selectedColor: colors.accent, borderStyle: dark ? 'black' : 'white' });
+  if (surface === 'native') wx.setNavigationBarColor({ backgroundColor: colors.bg, frontColor: dark ? '#ffffff' : '#000000' });
+  if (surface === 'tab') wx.setTabBarStyle({ backgroundColor: dark ? '#171717' : colors.card, color: colors.muted, selectedColor: colors.accent, borderStyle: dark ? 'black' : 'white' });
 }

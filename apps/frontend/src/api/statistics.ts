@@ -10,7 +10,7 @@ import type {
 } from '@baby-record/shared';
 
 export interface StatsParams {
-  babyId: number;
+  babyId: string;
   range?: RangeType;
   startDate?: string;
   endDate?: string;

@@ -12,8 +12,8 @@ const instance: AxiosInstance = axios.create({
   withCredentials: true,
 });
 
-let requestBaby: number | null = null;
-export function setRequestBaby(id: number | null) { requestBaby = id; }
+let requestBaby: string | null = null;
+export function setRequestBaby(id: string | null) { requestBaby = id; }
 
 instance.interceptors.request.use((config) => {
   if (requestBaby && /^\/(foods|exercise-configs|supplement-configs)(?:\/|$)/.test(config.url ?? '')) {

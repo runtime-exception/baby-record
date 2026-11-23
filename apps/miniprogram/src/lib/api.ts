@@ -5,18 +5,22 @@ type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 const tokenKey = 'baby-record:wechat-session';
 const babyKey = 'baby-record:baby-id';
 let token = String(wx.getStorageSync(tokenKey) ?? '');
-let babyId = Number(wx.getStorageSync(babyKey) ?? 0);
+let babyId = String(wx.getStorageSync(babyKey) ?? '');
 let sessionRevision = 0;
 let scopeRevision = 0;
 
 export function currentBabyId() { return babyId; }
 export function revision() { return scopeRevision; }
+export function isCurrentBaby(id: string | number | null | undefined) {
+  return String(id ?? '') === babyId;
+}
 
-export function selectBaby(id: number) {
-  if (babyId === id) return;
-  babyId = id;
+export function selectBaby(id: string | number | null | undefined) {
+  const next = String(id ?? '');
+  if (babyId === next) return;
+  babyId = next;
   scopeRevision++;
-  if (id) wx.setStorageSync(babyKey, id);
+  if (next) wx.setStorageSync(babyKey, next);
   else wx.removeStorageSync(babyKey);
 }
 
@@ -25,11 +29,22 @@ export function clearSession() {
   sessionRevision++;
   scopeRevision++;
   wx.removeStorageSync(tokenKey);
-  selectBaby(0);
+  selectBaby('');
 }
 
 class ApiError extends Error {
   constructor(readonly code: number, message: string) { super(message); }
+}
+
+function requestMessage(message?: string) {
+  const text = String(message ?? '').trim();
+  if (!text) return '请求失败，请稍后重试';
+  if (/^Cannot\s+DELETE\s+\//i.test(text)) return '删除功能暂不可用，请稍后再试';
+  if (/^Cannot\s+(GET|POST|PATCH|PUT)\s+\//i.test(text) || /^Not Found$/i.test(text)) {
+    return '该功能暂不可用，请稍后重试';
+  }
+  if (/^Internal server error$/i.test(text)) return '服务暂时不可用，请稍后重试';
+  return text;
 }
 
 export function explain(error: unknown) {
@@ -55,7 +70,7 @@ export function api<T>(path: string, method: Method = 'GET', data?: object, scop
         wx.reLaunch({ url: '/pages/login/index' + redirect });
       }
       if (res.data?.code === 0) resolve(res.data.data);
-      else reject(new ApiError(res.data?.code ?? 0, res.data?.message || '请求失败，请稍后重试'));
+      else reject(new ApiError(res.data?.code ?? 0, requestMessage(res.data?.message)));
     },
     fail: (error) => reject(new Error(error.errMsg)),
   }));
@@ -78,8 +93,8 @@ export async function babyContext(requireBaby = true, loginScene?: string) {
     return null;
   }
   const list = await api<MemberBaby[]>('/babies');
-  const baby = list.find((item) => item.id === babyId) ?? list[0] ?? null;
-  selectBaby(baby?.id ?? 0);
+  const baby = list.find((item) => String(item.id) === babyId) ?? list[0] ?? null;
+  selectBaby(baby?.id);
   if (!baby && requireBaby) wx.reLaunch({ url: '/pages/onboarding/index' });
   return { baby, list };
 }
@@ -92,7 +107,7 @@ export async function logout() {
   }
 }
 
-export function uploadAvatar(id: number, file: string) {
+export function uploadAvatar(id: string, file: string) {
   return new Promise<void>((resolve, reject) => wx.uploadFile({
     url: apiBase + '/babies/' + id + '/avatar', filePath: file, name: 'file',
     header: { Authorization: 'Bearer ' + token },

@@ -1,0 +1,8 @@
+<page-meta page-style="{{appearanceStyle}}" />
+<view class="screen tabScreen historyDetail">
+  <view class="detailHeader">
+    <button class="backButton" aria-label="返回" bindtap="back"><view class="backChevron"></view></button>
+    <view class="heading">历史记录</view>
+  </view>
+  <include src="../history/timeline.wxml" />
+</view>

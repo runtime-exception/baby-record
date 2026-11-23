@@ -18,7 +18,7 @@ import {
 
 export interface SleepVo {
   id: number;
-  babyId: number;
+  babyId: string;
   startTime: string;
   endTime: string | null;
   durationMinutes: number | null;
@@ -143,7 +143,7 @@ export class SleepService {
     await this.prisma.sleep.delete({ where: { id } });
   }
 
-  async findByRange(babyId: number, start: Date, end: Date): Promise<Sleep[]> {
+  async findByRange(babyId: string, start: Date, end: Date): Promise<Sleep[]> {
     return this.prisma.sleep.findMany({
       where: { babyId, startTime: { gte: start, lte: end } },
       orderBy: { startTime: 'desc' },
@@ -162,7 +162,7 @@ export class SleepService {
     return where;
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });

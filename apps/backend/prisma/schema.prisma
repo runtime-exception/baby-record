@@ -53,7 +53,7 @@ enum SleepType {
 // ============ 核心模型 ============
 
 model Baby {
-  id                Int      @id @default(autoincrement())
+  id                String   @id @default(dbgenerated("substr(replace(gen_random_uuid()::text, '-', ''), 1, 16)")) @db.VarChar(16)
   name              String
   nickname          String?  @map("nickname")
   gender            Gender
@@ -109,7 +109,7 @@ model User {
 
 model Temperature {
   id          Int      @id @default(autoincrement())
-  babyId      Int      @map("baby_id")
+  babyId      String   @map("baby_id") @db.VarChar(16)
   temperature Decimal  @db.Decimal(4, 1) // 36.0 - 41.0
   measureTime DateTime @map("measure_time")
   remark      String?
@@ -126,7 +126,7 @@ model Temperature {
 
 model Feeding {
   id              Int         @id @default(autoincrement())
-  babyId          Int         @map("baby_id")
+  babyId          String      @map("baby_id") @db.VarChar(16)
   feedingTime     DateTime    @map("feeding_time")
   feedingType     FeedingType @map("feeding_type")
   components      FeedingType[] @default([])
@@ -157,7 +157,7 @@ model Food {
   feedings       FeedingFood[]
   allergyRecords FoodAllergyRecord[]
 
-  babyId Int? @map("baby_id")
+  babyId String? @map("baby_id") @db.VarChar(16)
   baby Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
 
   @@unique([babyId, name])
@@ -174,7 +174,7 @@ model SupplementConfig {
   createdTime   DateTime @default(now()) @map("created_time")
   updatedTime   DateTime @updatedAt @map("updated_time")
 
-  babyId Int? @map("baby_id")
+  babyId String? @map("baby_id") @db.VarChar(16)
   baby Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
 
   @@unique([babyId, name])
@@ -191,7 +191,7 @@ model ExerciseConfig {
   createdTime   DateTime @default(now()) @map("created_time")
   updatedTime   DateTime @updatedAt @map("updated_time")
 
-  babyId Int? @map("baby_id")
+  babyId String? @map("baby_id") @db.VarChar(16)
   baby Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
 
   @@unique([babyId, name])
@@ -212,7 +212,7 @@ model FeedingFood {
 
 model FoodAllergyRecord {
   id               Int               @id @default(autoincrement())
-  babyId           Int               @map("baby_id")
+  babyId           String            @map("baby_id") @db.VarChar(16)
   foodId           Int               @map("food_id")
   exposureTime     DateTime          @map("exposure_time")
   observations     Json
@@ -236,7 +236,7 @@ model FoodAllergyRecord {
 
 model Diaper {
   id          Int        @id @default(autoincrement())
-  babyId      Int        @map("baby_id")
+  babyId      String     @map("baby_id") @db.VarChar(16)
   changeTime  DateTime   @map("change_time")
   type        DiaperType
   remark      String?
@@ -254,7 +254,7 @@ model Diaper {
 
 model Sleep {
   id              Int       @id @default(autoincrement())
-  babyId          Int       @map("baby_id")
+  babyId          String    @map("baby_id") @db.VarChar(16)
   startTime       DateTime  @map("start_time")
   endTime         DateTime? @map("end_time") // 空 = 正在睡眠
   durationMinutes Int?      @map("duration_minutes") // 结束时回填
@@ -274,7 +274,7 @@ model Sleep {
 
 model Supplement {
   id          Int      @id @default(autoincrement())
-  babyId      Int      @map("baby_id")
+  babyId      String   @map("baby_id") @db.VarChar(16)
   name        String // 维生素D / DHA / 钙 / 其他
   amount      String?
   unit        String? // 滴 / 粒 / ml
@@ -294,7 +294,7 @@ model Supplement {
 
 model Activity {
   id            Int      @id @default(autoincrement())
-  babyId        Int      @map("baby_id")
+  babyId        String   @map("baby_id") @db.VarChar(16)
   eventType     String   @map("event_type") // 运动/洗澡/其他
   exerciseTypes String[] @default([]) @map("exercise_types")
   amount        String?
@@ -319,7 +319,7 @@ model Activity {
 
 model GrowthRecord {
   id                Int      @id @default(autoincrement())
-  babyId            Int      @map("baby_id")
+  babyId            String   @map("baby_id") @db.VarChar(16)
   measureTime       DateTime @map("measure_time")
   weight            Decimal? @db.Decimal(6, 2)
   height            Decimal? @db.Decimal(5, 1)
@@ -337,7 +337,7 @@ model GrowthRecord {
 
 model MedicalRecord {
   id          Int      @id @default(autoincrement())
-  babyId      Int      @map("baby_id")
+  babyId      String   @map("baby_id") @db.VarChar(16)
   recordType  String   @map("record_type") // 疫苗/体检/就诊/用药
   recordTime  DateTime @map("record_time")
   title       String
@@ -355,7 +355,7 @@ model MedicalRecord {
 
 model AiAnalysis {
   id           Int      @id @default(autoincrement())
-  babyId       Int      @map("baby_id")
+  babyId       String   @map("baby_id") @db.VarChar(16)
   analysisType String   @map("analysis_type") // 喂养规律/睡眠趋势/异常提醒
   periodStart  DateTime @map("period_start")
   periodEnd    DateTime @map("period_end")
@@ -391,7 +391,7 @@ model Account {
 
 model BabyMember {
   accountId Int              @map("account_id")
-  babyId    Int              @map("baby_id")
+  babyId    String           @map("baby_id") @db.VarChar(16)
   creatorId Int?             @unique @map("creator_id")
   name      String
   role      UserRole
@@ -431,7 +431,7 @@ model WebLogin {
 }
 
 model BabyClaim {
-  babyId    Int      @id @map("baby_id")
+  babyId    String   @id @map("baby_id") @db.VarChar(16)
   codeHash  String   @map("code_hash")
   expiresAt DateTime @map("expires_at")
   baby      Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)

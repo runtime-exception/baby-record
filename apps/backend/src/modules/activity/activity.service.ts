@@ -12,7 +12,7 @@ import { QueryActivityDto } from './dto/query-activity.dto';
 
 export interface ActivityVo {
   id: number;
-  babyId: number;
+  babyId: string;
   eventType: string;
   exerciseTypes: string[];
   amount: string | null;
@@ -86,14 +86,14 @@ export class ActivityService {
     await this.prisma.activity.delete({ where: { id } });
   }
 
-  async findByRange(babyId: number, start: Date, end: Date): Promise<Activity[]> {
+  async findByRange(babyId: string, start: Date, end: Date): Promise<Activity[]> {
     return this.prisma.activity.findMany({
       where: { babyId, eventTime: { gte: start, lte: end } },
       orderBy: { eventTime: 'desc' },
     });
   }
 
-  private async exerciseData(babyId: number, dto: UpdateActivityDto, existing?: ActivityVo) {
+  private async exerciseData(babyId: string, dto: UpdateActivityDto, existing?: ActivityVo) {
     if ((dto.eventType ?? existing?.eventType) !== '运动') {
       return { exerciseTypes: [], amount: null, unit: null };
     }
@@ -135,7 +135,7 @@ export class ActivityService {
     return where;
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });

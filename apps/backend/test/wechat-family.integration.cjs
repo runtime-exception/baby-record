@@ -59,6 +59,8 @@ async function main() {
   }
   const legacy = await prisma.baby.findMany({ where: { name: { startsWith: 'Legacy' } }, orderBy: { id: 'asc' } });
   assert.equal(legacy.length, 2);
+  assert.match(legacy[0].id, /^[a-f0-9]{16}$/);
+  assert.match(legacy[1].id, /^[a-f0-9]{16}$/);
   const history = await prisma.feeding.findMany({
     where: { babyId: { in: legacy.map((item) => item.id) } },
     include: { creator: true, foods: { include: { food: true } } }, orderBy: { id: 'asc' },
@@ -83,6 +85,8 @@ async function main() {
   const enrollment = { gender: 'MALE', birthday: '2025-01-01', memberName: '家长', role: 'DAD' };
   const baby = await okay('/babies', { ...dadAuth, body: { ...enrollment, name: '宝宝甲' } });
   const otherBaby = await okay('/babies', { ...otherAuth, body: { ...enrollment, name: '宝宝乙' } });
+  assert.match(baby.id, /^[a-f0-9]{16}$/);
+  assert.match(otherBaby.id, /^[a-f0-9]{16}$/);
   assert.equal((await okay('/babies', dadAuth))[0].membership.isAdmin, true);
   assert.equal((await okay('/babies', otherAuth)).length, 1);
   await blocked('/babies/' + baby.id, otherAuth);
@@ -108,7 +112,7 @@ async function main() {
   const profileImage = new FormData();
   profileImage.append('file', new Blob([Buffer.from('89504e470d0a1a0a', 'hex')], { type: 'image/png' }), 'test.png');
   const avatar = await okay('/babies/' + baby.id + '/avatar', { ...dadAuth, body: profileImage });
-  assert.match(avatar.avatar, /^babies\/\d+\/avatar/);
+  assert.match(avatar.avatar, /^babies\/[a-f0-9]{16}\/avatar/);
   await blocked('/' + avatar.avatar, otherAuth);
   assert.equal((await send('/' + avatar.avatar, dadAuth)).response.headers.get('Cache-Control'), 'private, no-store');
 

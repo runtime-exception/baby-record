@@ -11,8 +11,7 @@ const router = useRouter();
 const babies = useBabyStore();
 const feedback = useAppFeedback();
 const applications = ref<FamilyApplication[]>([]);
-const babyId = ref<number>();
-const memberName = ref('');
+const babyId = ref('');
 const role = ref<UserRole>('DAD');
 const code = ref('');
 const claimMode = ref(false);
@@ -26,10 +25,10 @@ async function refresh() {
 onMounted(() => { void refresh().catch(() => {}); });
 
 async function submit() {
-  if (busy.value || !babyId.value || !memberName.value.trim()) return;
+  if (busy.value || !babyId.value) return;
   busy.value = true;
   try {
-    const payload = { babyId: babyId.value, memberName: memberName.value.trim(), role: role.value };
+    const payload = { babyId: babyId.value, role: role.value };
     if (claimMode.value) {
       await familyApi.claim({ ...payload, code: code.value.trim() });
       await babies.loadBabies();
@@ -50,9 +49,8 @@ async function submit() {
     <AppHeader title="绑定已有宝宝" show-back />
     <div class="mx-auto max-w-app space-y-3 px-5 py-4">
       <form class="space-y-3 rounded-3xl bg-ios-card p-5 shadow-card" @submit.prevent="submit">
-        <label class="block">宝宝 ID <input v-model.number="babyId" required class="mt-1 block w-full rounded-xl bg-ios-bg p-2" type="number" min="1" /></label>
-        <label class="block">显示名称 <input v-model="memberName" required class="mt-1 block w-full rounded-xl bg-ios-bg p-2" maxlength="40" /></label>
-        <label class="block">你的身份 <select v-model="role" class="mt-1 block w-full rounded-xl bg-ios-bg p-2">
+        <label class="block">宝宝 ID <input v-model.trim="babyId" required class="mt-1 block w-full rounded-xl bg-ios-bg p-2 font-mono" type="text" minlength="16" maxlength="16" pattern="[0-9a-fA-F]{16}" autocomplete="off" placeholder="16 位十六进制 ID" /></label>
+        <label class="block">你与宝宝的关系 <select v-model="role" class="mt-1 block w-full rounded-xl bg-ios-bg p-2">
           <option v-for="(label, key) in USER_ROLE_LABELS" :key="key" :value="key">{{ label }}</option>
         </select></label>
         <label class="flex items-center gap-2"><input v-model="claimMode" type="checkbox" /> 我有旧宝宝认领码</label>

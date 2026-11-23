@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req } from '@nestjs/common';
 import { IsIn } from 'class-validator';
+import { BabyIdPipe } from '../../common/pipes/baby-id.pipe';
 import { FamilyRequest } from '../auth/family-scope';
 import { FamilyService } from './family.service';
 import { ApplyDto, ClaimDto } from './identity.dto';
@@ -29,14 +30,14 @@ export class FamilyController {
   }
 
   @Get(':babyId/members')
-  members(@Req() request: FamilyRequest, @Param('babyId', ParseIntPipe) babyId: number) {
+  members(@Req() request: FamilyRequest, @Param('babyId', BabyIdPipe) babyId: string) {
     return this.family.listMembers(request.accountId, babyId);
   }
 
   @Patch(':babyId/members/:accountId')
   decide(
     @Req() request: FamilyRequest,
-    @Param('babyId', ParseIntPipe) babyId: number,
+    @Param('babyId', BabyIdPipe) babyId: string,
     @Param('accountId', ParseIntPipe) accountId: number,
     @Body() dto: DecisionDto,
   ) {
@@ -46,7 +47,7 @@ export class FamilyController {
   @Delete(':babyId/members/:accountId')
   remove(
     @Req() request: FamilyRequest,
-    @Param('babyId', ParseIntPipe) babyId: number,
+    @Param('babyId', BabyIdPipe) babyId: string,
     @Param('accountId', ParseIntPipe) accountId: number,
   ) {
     return this.family.changeStatus(request.accountId, babyId, accountId, 'REMOVED');

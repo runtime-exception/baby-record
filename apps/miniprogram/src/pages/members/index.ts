@@ -4,7 +4,7 @@ import { api, babyContext, report } from '../../lib/api';
 import { confirm } from '../../lib/format';
 
 Page({
-  data: { babyId: 0, admin: false, members: [] as (FamilyMember & { roleLabel: string })[], busy: false },
+  data: { babyId: '', admin: false, members: [] as (FamilyMember & { roleLabel: string; title: string })[], busy: false },
   onShow() { applyAppearance(this); void this.refresh(); },
   async onPullDownRefresh() { try { await this.refresh(); } finally { wx.stopPullDownRefresh(); } },
   async refresh() {
@@ -13,7 +13,14 @@ Page({
       const baby = result?.baby;
       if (!baby) return;
       const members = await api<FamilyMember[]>('/family/' + baby.id + '/members');
-      this.setData({ babyId: baby.id, admin: baby.membership.isAdmin, members: members.map((item) => ({ ...item, roleLabel: USER_ROLE_LABELS[item.role] })) });
+      this.setData({
+        babyId: baby.id,
+        admin: baby.membership.isAdmin,
+        members: members.map((item) => {
+          const roleLabel = USER_ROLE_LABELS[item.role];
+          return { ...item, roleLabel, title: item.name === roleLabel ? roleLabel : `${item.name} · ${roleLabel}` };
+        }),
+      });
     } catch (error) { this.setData({ members: [] }); report(error); }
   },
   async change(event: WxEvent) {

@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AllergyConclusion } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsIn, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsDateString, IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, ValidateNested } from 'class-validator';
+import { BABY_ID_PATTERN } from '../../../common/utils/baby-id.util';
 import { ObservationState } from '../allergy-score';
 
 export class FoodAllergyObservationsDto {
@@ -20,9 +21,9 @@ export class FoodAllergyObservationsDto {
 
 export class CreateFoodAllergyDto {
   @ApiProperty()
-  @Type(() => Number)
-  @IsInt()
-  babyId: number;
+  @IsString()
+  @Matches(BABY_ID_PATTERN, { message: '宝宝 ID 必须是 16 位十六进制字符' })
+  babyId: string;
 
   @ApiProperty()
   @Type(() => Number)

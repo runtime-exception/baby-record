@@ -12,7 +12,7 @@ import { resolveFeedingComponents } from './feeding-composition';
 
 export interface FeedingVo {
   id: number;
-  babyId: number;
+  babyId: string;
   feedingTime: string;
   feedingType: string;
   components: FeedingType[];
@@ -120,7 +120,7 @@ export class FeedingService {
   }
 
   /** 时间范围内的喂养记录（供统计/聚合使用） */
-  async findByRange(babyId: number, start: Date, end: Date): Promise<Feeding[]> {
+  async findByRange(babyId: string, start: Date, end: Date): Promise<Feeding[]> {
     return this.prisma.feeding.findMany({
       where: {
         babyId,
@@ -144,7 +144,7 @@ export class FeedingService {
     return where;
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });
@@ -158,7 +158,7 @@ export class FeedingService {
   }
 
   private async validateFoods(
-    babyId: number,
+    babyId: string,
     feedingType: FeedingType,
     requestedFoodIds: number[],
     existingFoodIds: number[] = [],

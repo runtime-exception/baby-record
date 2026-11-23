@@ -1,38 +1,53 @@
 <page-meta page-style="{{appearanceStyle}}" />
-<view class="screen">
-  <view class="heading">首页</view><view class="subtitle">{{baby ? (baby.nickname || baby.name) + ' 的成长记录' : '宝宝成长记录'}}</view>
-  <view class="empty" wx:if="{{loading && !baby}}">加载中…</view>
-  <button class="error" wx:if="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+<view class="screen tabScreen">
+  <view wx:if="{{loading && !baby}}" class="empty">加载中…</view>
+  <button wx:if="{{error}}" class="error" bindtap="refresh">{{error}} · 点击重试</button>
   <block wx:if="{{baby}}">
-    <view class="panel hero">
-      <view class="row">
-        <view><view class="title">{{baby.name}}</view><view class="value section">{{baby.age.totalMonths}} <text style="font-size:26rpx">个月 {{baby.age.days}} 天</text></view></view>
-        <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" /><view class="avatar" wx:else>👶</view>
-      </view>
-      <view class="muted section" wx:if="{{summary.latestGrowth}}">身高 {{summary.latestGrowth.height || '—'}} cm · 体重 {{summary.latestGrowth.weight || '—'}} kg</view>
-    </view>
-    <view class="grid section">
-      <view class="panel" wx:for="{{cards}}" wx:key="label"><view class="muted">{{item.icon}} {{item.label}}</view><view class="title section">{{item.ago}}</view><view class="muted">{{item.detail}}</view></view>
-      <view class="panel"><view class="muted">🌡️ 体温</view><view class="title section">{{summary.latestTemperature ? summary.latestTemperature.temperature + ' ℃' : '暂无记录'}}</view><view class="muted">{{tempStatus}}</view></view>
-    </view>
-    <view class="panel stack" wx:if="{{nextFeeding || nextSleep || summary.wakePrediction.isSleeping}}">
-      <view wx:if="{{nextFeeding}}"><text class="title">建议喂养 {{nextFeeding}}</text><view class="muted">间隔 {{summary.feedingSuggestion.intervalRangeText}}<text wx:if="{{summary.feedingSuggestion.perFeedMinMl}}"> · 每次 {{summary.feedingSuggestion.perFeedMinMl}}–{{summary.feedingSuggestion.perFeedMaxMl}} ml</text></view></view>
-      <view wx:if="{{nextSleep || summary.wakePrediction.isSleeping}}"><text class="title">{{summary.wakePrediction.isSleeping ? '正在睡觉' : '建议入睡 ' + nextSleep}}</text><view class="muted" wx:if="{{nextSleep}}">建议清醒 {{summary.wakePrediction.recommendedWakeMinutes}} 分钟</view></view>
-    </view>
-    <view class="panel"><view class="title">快速记录</view><view class="chips">
-      <button wx:for="{{quick}}" wx:key="kind" data-kind="{{item.kind}}" bindtap="open">{{item.icon}} {{item.label}}</button>
-    </view></view>
-    <view class="panel" wx:if="{{summary.foodAllergySummary.allergic.length || summary.foodAllergySummary.possible.length || summary.foodAllergySummary.notAllergic.length}}">
-      <view class="title">辅食排敏</view>
-      <view class="line muted" wx:for="{{summary.foodAllergySummary.allergic}}" wx:key="foodId">{{item.foodName}} · 过敏</view>
-      <view class="line muted" wx:for="{{summary.foodAllergySummary.possible}}" wx:key="foodId">{{item.foodName}} · 可能过敏</view>
-      <view class="line muted" wx:for="{{summary.foodAllergySummary.notAllergic}}" wx:key="foodId">{{item.foodName}} · 未发现过敏</view>
-    </view>
-    <view class="panel"><view class="row"><view class="title">今日记录</view><button bindtap="history">查看历史</button></view>
-      <view wx:if="{{!today.length}}" class="empty">今天还没有记录</view>
-      <view wx:for="{{today}}" wx:key="key" class="row recordRow" data-kind="{{item.kind}}" data-id="{{item.id}}" bindtap="open">
-        <view>{{item.icon}} {{item.label}}<view class="muted">{{item.detail}}</view></view><text class="muted">{{item.time}}</text>
+    <view class="babyIntro">
+      <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
+      <view wx:else class="avatar">👶</view>
+      <view class="babyIdentity">
+        <view class="heading">{{baby.nickname || baby.name}}</view>
+        <view class="subtitle">{{baby.age.monthAgeText}}<text wx:if="{{growth}}"> · {{growth}}</text></view>
       </view>
     </view>
+    <view wx:for="{{cards}}" wx:key="kind" class="panel dashboardCard {{item.kind}}">
+      <view class="row dashboardCardHeader">
+        <view class="muted"><text class="dashboardIcon">{{item.icon}}</text>{{item.label}}</view>
+        <button class="textAction" data-kind="{{item.kind}}" bindtap="open">记录</button>
+      </view>
+      <view wx:if="{{item.value}}" class="dashboardValue {{item.tone}}">
+        <text>{{item.value}}</text><text wx:if="{{item.status}}" class="statusText {{item.status.tone}}">{{item.status.text}}</text>
+      </view>
+      <view wx:if="{{item.detail}}" class="caption">
+        <text>{{item.detail}}</text>
+        <block wx:if="{{item.advice}}"> · <text class="advice" data-kind="{{item.kind}}" bindtap="advice">{{item.advice}}</text>{{item.extra}}</block>
+      </view>
+      <view wx:if="{{item.warning}}" class="temperatureWarning">宝宝体温需要关注<view class="caption">请在宝宝平稳状态下进行测量</view></view>
+    </view>
+    <button class="panel homeLink allergy" bindtap="toggleAllergy" hover-class="pressed">
+      <text class="linkIcon">🥣</text><view class="linkBody"><view class="linkTitle">宝宝辅食排敏</view><view class="caption">{{allergyHeadline}}</view></view>
+      <text class="linkChevron">{{showAllergy ? '⌄' : '›'}}</text>
+    </button>
+    <view wx:if="{{showAllergy}}" class="allergyBackdrop" bindtap="toggleAllergy">
+      <scroll-view scroll-y class="allergySheet" catchtap="keepAllergyOpen">
+        <view class="row"><view class="title">宝宝辅食排敏</view><button class="textAction closeAllergy" bindtap="toggleAllergy">关闭</button></view>
+        <view wx:if="{{!summary.foodAllergySummary.allergic.length && !summary.foodAllergySummary.possible.length && !summary.foodAllergySummary.notAllergic.length}}" class="empty">暂无排敏记录</view>
+        <view class="line muted" wx:for="{{summary.foodAllergySummary.allergic}}" wx:key="foodId">{{item.foodName}} · 过敏</view>
+        <view class="line muted" wx:for="{{summary.foodAllergySummary.possible}}" wx:key="foodId">{{item.foodName}} · 可能过敏</view>
+        <view class="line muted" wx:for="{{summary.foodAllergySummary.notAllergic}}" wx:key="foodId">{{item.foodName}} · 未发现过敏</view>
+        <button class="primary section" data-kind="foodAllergy" bindtap="open">记录辅食排敏</button>
+      </scroll-view>
+    </view>
+    <view class="sectionCaption quickCaption">快捷操作</view>
+    <view class="panel shortcuts homeShortcuts">
+      <button wx:for="{{quick}}" wx:key="kind" data-kind="{{item.kind}}" bindtap="open">
+        <text class="shortcutIcon {{item.kind}}">{{item.icon}}</text>{{item.label}}
+      </button>
+    </view>
+    <button class="panel homeLink" bindtap="history" hover-class="pressed">
+      <text class="linkIcon">📋</text><view class="linkBody"><view class="linkTitle">历史记录</view><view class="caption">查看每天喂养 / 睡眠 / 护理时间轴</view></view>
+      <text class="linkChevron">›</text>
+    </button>
   </block>
 </view>

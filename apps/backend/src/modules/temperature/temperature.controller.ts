@@ -5,6 +5,7 @@ import { CreateTemperatureDto } from './dto/create-temperature.dto';
 import { UpdateTemperatureDto } from './dto/update-temperature.dto';
 import { QueryTemperatureDto } from './dto/query-temperature.dto';
 import { PaginatedResult } from '../../common/dto/pagination.dto';
+import { BabyIdPipe } from '../../common/pipes/baby-id.pipe';
 
 @ApiTags('体温记录')
 @Controller('temperatures')
@@ -25,7 +26,7 @@ export class TemperatureController {
 
   @Get('latest')
   @ApiOperation({ summary: '最新一次体温' })
-  findLatest(@Query('babyId', ParseIntPipe) babyId: number): Promise<TemperatureVo | null> {
+  findLatest(@Query('babyId', BabyIdPipe) babyId: string): Promise<TemperatureVo | null> {
     return this.temperatureService.findLatest(babyId);
   }
 

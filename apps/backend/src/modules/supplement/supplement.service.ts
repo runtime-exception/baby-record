@@ -11,7 +11,7 @@ import { QuerySupplementDto } from './dto/query-supplement.dto';
 
 export interface SupplementVo {
   id: number;
-  babyId: number;
+  babyId: string;
   name: string;
   amount: string | null;
   unit: string | null;
@@ -81,7 +81,7 @@ export class SupplementService {
     await this.prisma.supplement.delete({ where: { id } });
   }
 
-  async findByRange(babyId: number, start: Date, end: Date): Promise<Supplement[]> {
+  async findByRange(babyId: string, start: Date, end: Date): Promise<Supplement[]> {
     return this.prisma.supplement.findMany({
       where: { babyId, takeTime: { gte: start, lte: end } },
       orderBy: { takeTime: 'desc' },
@@ -98,7 +98,7 @@ export class SupplementService {
     return where;
   }
 
-  private async ensureRefs(babyId: number, creatorId: number): Promise<void> {
+  private async ensureRefs(babyId: string, creatorId: number): Promise<void> {
     const baby = await this.prisma.baby.findUnique({ where: { id: babyId }, select: { id: true } });
     if (!baby) throw new BusinessException(ErrorCode.BABY_NOT_FOUND);
     const user = await this.prisma.user.findUnique({ where: { id: creatorId }, select: { id: true } });

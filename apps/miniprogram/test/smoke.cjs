@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { existsSync, readFileSync } = require('node:fs');
-const { join } = require('node:path');
+const { dirname, join } = require('node:path');
 const { test } = require('node:test');
 
 const root = join(__dirname, '../dist');
@@ -18,6 +18,11 @@ global.wx = {
 const { api, babyContext, login, selectBaby } = require('../dist/lib/api.js');
 const respond = (request, data, code = 0) => request.success({ statusCode: 200, data: { code, data } });
 
+function templateWithIncludes(file) {
+  return readFileSync(file, 'utf8').replace(/<include src="([^"]+)"\s*\/>/g, (_, include) =>
+    templateWithIncludes(join(dirname(file), include)));
+}
+
 test('the native package registers all declared pages and their template events', () => {
   const manifest = require('../dist/app.json');
   assert.equal(manifest.lazyCodeLoading, 'requiredComponents');
@@ -32,7 +37,7 @@ test('the native package registers all declared pages and their template events'
     require(join(root, page + '.js'));
     assert.ok(registration, page);
     assert.ok(existsSync(join(root, page + '.json')), page);
-    const template = readFileSync(join(root, page + '.wxml'), 'utf8');
+    const template = templateWithIncludes(join(root, page + '.wxml'));
     for (const event of template.matchAll(/\b(?:bind|catch)(?::)?[\w-]+="([\w]+)"/g)) {
       assert.equal(typeof registration[event[1]], 'function', page + ' ' + event[1]);
     }
@@ -65,4 +70,22 @@ test('login stores the bearer session and switching babies discards earlier resp
   assert.equal(requests[0].header['X-Baby-Id'], '2');
   respond(requests.shift(), [{ name: '新宝宝的配置' }]);
   assert.deepEqual(await current, [{ name: '新宝宝的配置' }]);
+
+  const reload = babyContext(false);
+  respond(requests.shift(), [{ id: 1, name: '示例' }, { id: 2, name: '二号' }]);
+  assert.equal((await reload).baby.id, 2);
+  const afterReload = api('/foods');
+  assert.equal(requests[0].header['X-Baby-Id'], '2');
+  respond(requests.shift(), []);
+  assert.deepEqual(await afterReload, []);
+});
+
+test('missing backend routes are reported in Chinese', async () => {
+  const pending = api('/babies/1', 'DELETE');
+  const request = requests.shift();
+  request.success({
+    statusCode: 200,
+    data: { code: 40004, message: 'Cannot DELETE /api/v1/babies/1' },
+  });
+  await assert.rejects(pending, /删除功能暂不可用/);
 });

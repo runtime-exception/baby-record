@@ -5,7 +5,7 @@ import configuration from '../config/configuration';
 configuration();
 const prisma = new PrismaClient();
 
-async function copyConfig(db: Prisma.TransactionClient, kind: string, id: number, babyId: number, replace: boolean) {
+async function copyConfig(db: Prisma.TransactionClient, kind: string, id: number, babyId: string, replace: boolean) {
   const where = { id, babyId: null };
   if (kind === 'food') {
     const { name, emoji, isActive } = await db.food.findFirstOrThrow({ where });
@@ -33,9 +33,9 @@ async function main() {
     }, null, 2));
     return;
   }
-  const id = Number(from), babyId = Number(to);
+  const id = Number(from), babyId = to;
   const validId = (value: number) => Number.isInteger(value) && value > 0 && value <= 2147483647;
-  if (!['food', 'supplement', 'exercise'].includes(kind) || !validId(id) || !validId(babyId) || (flag && flag !== '--replace')) {
+  if (!['food', 'supplement', 'exercise'].includes(kind) || !validId(id) || !/^[a-f0-9]{16}$/i.test(babyId) || (flag && flag !== '--replace')) {
     throw new Error('用法：assign-legacy-config list | <food|supplement|exercise> <旧配置ID> <宝宝ID> [--replace]');
   }
   const config = await prisma.$transaction((db) => copyConfig(db, kind, id, babyId, flag === '--replace'));

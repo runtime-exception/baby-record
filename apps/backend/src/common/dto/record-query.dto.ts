@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional } from 'class-validator';
+import { IsDateString, IsOptional, IsString, Matches } from 'class-validator';
+import { BABY_ID_PATTERN } from '../utils/baby-id.util';
 import { PaginationDto } from './pagination.dto';
 
 /**
@@ -8,9 +8,9 @@ import { PaginationDto } from './pagination.dto';
  */
 export class RecordQueryDto extends PaginationDto {
   @ApiProperty({ description: '宝宝ID' })
-  @Type(() => Number)
-  @IsInt()
-  babyId: number;
+  @IsString()
+  @Matches(BABY_ID_PATTERN, { message: '宝宝 ID 必须是 16 位十六进制字符' })
+  babyId: string;
 
   @ApiPropertyOptional({ example: '2026-08-01', description: '开始日期 YYYY-MM-DD' })
   @IsOptional()

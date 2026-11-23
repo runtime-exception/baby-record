@@ -16,3 +16,9 @@ export function confirm(title: string, content: string) {
     title, content, success: (res) => resolve(res.confirm), fail: () => resolve(false),
   }));
 }
+
+export function duration(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return (hours ? hours + '小时' : '') + (remaining || !hours ? remaining + '分钟' : '');
+}

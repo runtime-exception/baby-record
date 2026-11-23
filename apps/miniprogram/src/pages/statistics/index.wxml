@@ -1,34 +1,49 @@
 <page-meta page-style="{{appearanceStyle}}" />
-<view class="screen">
-  <view class="heading">统计</view><view class="subtitle">宝宝成长趋势</view>
+<view class="screen tabScreen">
+  <view class="pageIntro"><view class="heading">统计</view><view class="subtitle">宝宝成长趋势</view></view>
   <view class="panel">
-    <view class="chips" style="margin-top:0"><button wx:for="{{options}}" wx:key="value" class="chip {{range === item.value ? 'selected' : ''}}" data-range="{{item.value}}" bindtap="chooseRange">{{item.label}}</button></view>
-    <view class="row field" wx:if="{{range === 'custom'}}">
-      <picker class="inlinePicker" mode="date" end="{{today}}" value="{{startDate}}" data-field="start" bindchange="changeDate">{{startDate}}</picker>
-      <picker class="inlinePicker" mode="date" start="{{startDate}}" end="{{today}}" value="{{endDate}}" data-field="end" bindchange="changeDate">{{endDate}}</picker>
+    <view class="segment">
+      <button wx:for="{{options}}" wx:key="value" class="{{range === item.value ? 'current' : ''}}" data-range="{{item.value}}" bindtap="chooseRange">{{item.label}}</button>
+    </view>
+    <view class="dateRange field" wx:if="{{range === 'custom'}}">
+      <picker mode="date" end="{{today}}" value="{{startDate}}" data-field="start" bindchange="changeDate">
+        <view class="dateValue"><text>{{startDate}}</text><view class="dateGlyph"></view></view>
+      </picker>
+      <text class="muted">至</text>
+      <picker mode="date" start="{{startDate}}" end="{{today}}" value="{{endDate}}" data-field="end" bindchange="changeDate">
+        <view class="dateValue"><text>{{endDate}}</text><view class="dateGlyph"></view></view>
+      </picker>
     </view>
   </view>
   <view class="empty" wx:if="{{loading}}">加载中…</view>
   <button class="error" wx:if="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
   <block wx:if="{{overview && !loading}}">
     <view class="panel" wx:for="{{charts}}" wx:for-item="chart" wx:key="key">
-      <view class="title">{{chart.title}}</view>
-      <view class="empty" wx:if="{{chart.empty}}">暂无记录</view>
+      <view class="row">
+        <view class="chartTitle">{{chart.title}}</view>
+        <text class="chartTotal" wx:if="{{chart.distribution}}">{{overview.supplement.count}} 次</text>
+      </view>
+      <view class="chartEmpty" wx:if="{{chart.empty}}">{{chart.source ? (chart.key === 'height' ? '暂无身高记录，去「记录 → 其他」添加' : '暂无体重记录，去「记录 → 其他」添加') : '暂无数据'}}</view>
       <block wx:else>
-        <canvas canvas-id="chart-{{chart.key}}" class="section" style="width:100%;height:150px" data-key="{{chart.key}}" bindtap="showValue" />
-        <view class="chips"><text wx:for="{{chart.series}}" wx:key="name" class="muted" style="color:{{item.color}}">● {{item.name}}</text></view>
-        <view class="line muted" wx:if="{{chart.note}}">{{chart.note}}</view>
+        <view wx:if="{{chart.series.length > 1 && !chart.distribution}}" class="legend">
+          <view wx:for="{{chart.series}}" wx:key="name" class="legendItem"><text style="color:{{item.color}}">●</text> {{item.name}}</view>
+        </view>
+        <canvas canvas-id="chart-{{chart.key}}" class="statsChart" data-key="{{chart.key}}" bindtap="showValue" />
+        <view wx:if="{{chart.distribution}}" class="legend">
+          <view wx:for="{{chart.series}}" wx:key="name" class="legendItem"><text style="color:{{item.color}}">●</text> {{item.name}} {{item.data[0]}}次</view>
+        </view>
+        <block wx:if="{{chart.latest}}">
+          <view class="row chartMeta">
+            <text>{{chart.latest}}</text>
+            <text class="rangeStatus {{chart.percent < 0 || chart.percent > 100 ? 'outOfRange' : ''}}">位于参考区间 {{chart.percent == null ? '—' : chart.percent + '%'}}</text>
+          </view>
+          <block wx:if="{{chart.percent != null}}">
+            <view class="referenceTrack"><view class="referenceMarker" style="left:{{chart.marker}}%"></view></view>
+            <view class="rangeStatus {{chart.percent < 0 || chart.percent > 100 ? 'outOfRange' : ''}}">{{chart.status}}</view>
+          </block>
+        </block>
       </block>
-    </view>
-    <view class="panel stack">
-      <view class="title">护理统计</view>
-      <view class="row line"><text>喂养 {{overview.feeding.count}} 次</text><text class="muted">总量 {{overview.feeding.totalAmount}} ml</text></view>
-      <view class="row"><text>平均奶量 {{overview.feeding.avgAmount}} ml</text><text class="muted">间隔 {{overview.feeding.avgIntervalText}}</text></view>
-      <view class="row line"><text>纸尿裤 {{overview.diaper.total}} 次</text><text class="muted">尿 {{overview.diaper.pee}} · 便 {{overview.diaper.poop}}</text></view>
-      <view class="row line"><text>睡眠 {{overview.sleep.count}} 次</text><text class="muted">合计 {{overview.sleep.totalText}}</text></view>
-      <view class="row"><text>白天 {{overview.sleep.daytimeText}}</text><text class="muted">夜间 {{overview.sleep.nightText}} · 平均 {{overview.sleep.avgText}}</text></view>
-      <view class="line"><text>补剂 {{overview.supplement.count}} 次</text><view wx:for="{{overview.supplement.typeStats}}" wx:key="name" class="muted">{{item.name}} {{item.count}} 次</view></view>
-      <view class="line"><text>活动 {{overview.activity.total}} 次</text><view wx:for="{{overview.activity.typeStats}}" wx:key="eventType" class="muted">{{item.eventType}} {{item.count}} 次</view></view>
+      <view wx:if="{{chart.source}}" class="sourceNote">参考标准：<text data-source="{{chart.source}}" bindtap="copySource">WHO 儿童生长标准 ↗</text></view>
     </view>
   </block>
 </view>
