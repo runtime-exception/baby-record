@@ -14,6 +14,8 @@ import { useThemeStore } from '@/stores/theme';
 import { useAuthStore } from '@/stores/auth';
 import type { ThemeMode, UiTheme } from '@/stores/theme';
 import { GENDER_LABELS, USER_ROLE_LABELS } from '@baby-record/shared';
+import { formatBabyDisplayName } from '@/utils/baby-display';
+import { prepareAvatarDataUrl } from '@/utils/avatar-image';
 
 const userStore = useUserStore();
 const babyStore = useBabyStore();
@@ -22,6 +24,7 @@ const authStore = useAuthStore();
 const router = useRouter();
 const message = useAppFeedback();
 const avatarInput = ref<HTMLInputElement | null>(null);
+const avatarBusy = ref(false);
 
 const themeOptions: { label: string; value: ThemeMode }[] = [
   { label: '浅色', value: 'light' },
@@ -54,23 +57,38 @@ const roleCaption = computed(() => {
   return current.name === label ? '' : label;
 });
 const babies = computed(() => babyStore.babies);
+const babyDisplayName = computed(() =>
+  baby.value ? formatBabyDisplayName(baby.value.name, baby.value.nickname) : '',
+);
 
 function selectBaby(id: string) {
   babyStore.setCurrentBaby(id);
 }
 
 async function chooseAvatar(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file || !baby.value) return;
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  const current = baby.value;
+  if (!file || !current || avatarBusy.value) return;
   if (!file.type.startsWith('image/')) { message.warning('请选择图片文件'); return; }
-  if (file.size > 8 * 1024 * 1024) { message.warning('头像图片请小于 8MB'); return; }
-  const id = baby.value.id;
+  avatarBusy.value = true;
   try {
-    const updated = await babyApi.uploadAvatar(id, file);
+    // 先裁剪为正方形并压缩，避免大图上传超时
+    const dataUrl = await prepareAvatarDataUrl(file);
+    const compressed = await (await fetch(dataUrl)).blob();
+    const upload = new File([compressed], 'avatar.jpg', { type: compressed.type });
+    const updated = await babyApi.uploadAvatar(current.id, upload);
     babyStore.replaceBaby(updated);
     message.success('头像已更新');
-  } catch { /* 请求层显示错误 */ }
-  (event.target as HTMLInputElement).value = '';
+  } catch (error) {
+    // 图片预处理失败时给出明确原因；接口错误已由请求层提示
+    if (error instanceof Error && error.message.includes('图片')) {
+      message.warning(error.message);
+    }
+  } finally {
+    avatarBusy.value = false;
+  }
 }
 
 async function copyBabyId(id: string) {
@@ -94,15 +112,21 @@ async function logout() {
     <section v-if="baby" class="px-5 mt-4">
       <div class="bg-gradient-to-br from-ios-blue to-ios-teal rounded-3xl p-5 shadow-soft text-white">
         <div class="flex items-center gap-3">
-          <button class="relative w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-4xl overflow-hidden" @click="baby.membership.isAdmin && avatarInput?.click()">
+          <button
+            class="relative w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-4xl overflow-hidden disabled:opacity-70"
+            :disabled="avatarBusy"
+            aria-label="更换宝宝头像"
+            @click="baby.membership.isAdmin && avatarInput?.click()"
+          >
             <img v-if="baby.avatar" :src="mediaUrl(baby.avatar)" alt="宝宝头像" class="w-full h-full object-cover" />
             <template v-else>👶</template>
-            <span v-if="baby.membership.isAdmin" class="absolute bottom-0 inset-x-0 text-[10px] leading-4 bg-black/30">更换</span>
+            <span v-if="baby.membership.isAdmin" class="absolute bottom-0 inset-x-0 text-[10px] leading-4 bg-black/30">
+              {{ avatarBusy ? '上传中' : '更换' }}
+            </span>
           </button>
           <input ref="avatarInput" type="file" accept="image/*" capture="user" class="hidden" @change="chooseAvatar" />
-          <div class="flex-1">
-            <h2 class="text-xl font-bold">{{ baby.name }}</h2>
-            <p v-if="baby.nickname" class="text-sm text-white/80">{{ baby.nickname }}</p>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-xl font-bold truncate">{{ babyDisplayName }}</h2>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs bg-white/25 px-2.5 py-1 rounded-full">
