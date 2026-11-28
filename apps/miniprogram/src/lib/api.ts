@@ -122,8 +122,38 @@ export function uploadAvatar(id: string, file: string) {
   }));
 }
 
+const DATA_AVATAR = /^data:image\/(jpeg|png|gif|webp);base64,([A-Za-z0-9+/=]+)$/;
+
+/** 微信 <image> 对长 Base64 兼容性不稳定，统一落成本地文件再渲染。 */
+function cacheDataAvatar(path: string) {
+  const matched = DATA_AVATAR.exec(path);
+  if (!matched) return Promise.resolve('');
+  const payload = matched[2];
+  let hash = 2166136261;
+  for (let index = 0; index < payload.length; index++) {
+    hash = Math.imul(hash ^ payload.charCodeAt(index), 16777619) >>> 0;
+  }
+  const extension = matched[1] === 'jpeg' ? 'jpg' : matched[1];
+  const filePath = `${wx.env.USER_DATA_PATH}/baby-avatar-${hash.toString(36)}-${payload.length}.${extension}`;
+  return new Promise<string>((resolve) => {
+    const manager = wx.getFileSystemManager();
+    manager.access({
+      path: filePath,
+      success: () => resolve(filePath),
+      fail: () => manager.writeFile({
+        filePath,
+        data: payload,
+        encoding: 'base64',
+        success: () => resolve(filePath),
+        fail: () => resolve(path),
+      }),
+    });
+  });
+}
+
 export function avatarSource(path: string | null) {
-  if (!path || path.startsWith('data:')) return Promise.resolve(path ?? '');
+  if (!path) return Promise.resolve('');
+  if (path.startsWith('data:')) return cacheDataAvatar(path);
   return new Promise<string>((resolve) => wx.downloadFile({
     url: apiBase + '/' + path, header: { Authorization: 'Bearer ' + token },
     success: (res) => resolve(res.statusCode === 200 ? res.tempFilePath : ''),

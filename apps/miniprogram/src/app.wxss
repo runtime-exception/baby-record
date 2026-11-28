@@ -1,4 +1,9 @@
 page { background: var(--bg,#f2f2f7); color: var(--text,#182439); font: var(--font,30rpx) -apple-system, BlinkMacSystemFont, sans-serif; }
+page {
+  --anchor-expand-easing: cubic-bezier(.2,.74,.24,1);
+  --anchor-collapse-easing: cubic-bezier(.76,0,.8,.26);
+  --anchor-collapse-fade: cubic-bezier(.75,0,.75,.9);
+}
 .screen { padding: 24rpx 38rpx 64rpx; }
 .heading { font-size: calc(var(--font, 30rpx) + 16rpx); line-height: 1.2; font-weight: 700; letter-spacing: -1rpx; }
 .subtitle { margin-top: 8rpx; color: var(--muted,#64748b); font-size: calc(var(--font, 30rpx) - 4rpx); }
@@ -27,7 +32,8 @@ button[disabled] { opacity: .5; }
 input, picker, textarea { box-sizing: border-box; width: 100%; background: var(--input,#f2f2f7); border-radius: 24rpx; min-height: 76rpx; padding: 18rpx 22rpx; }
 textarea { height: 160rpx; }
 .inlinePicker { flex: 1; }
-.avatar { flex: none; width: 100rpx; height: 100rpx; border-radius: 50%; background: #ffffff42; display: grid; place-items: center; font-size: 54rpx; }
+.avatar { display: block; flex: none; width: 100rpx; height: 100rpx; border-radius: 50%; background: #ffffff42; }
+.avatarFallback { display: grid; place-items: center; font-size: 54rpx; }
 .empty, .error { margin-top: 24rpx; text-align: center; color: var(--muted,#64748b); padding: 26rpx; }
 .error { color: #b02c31; }
 .line { border-top: 1rpx solid var(--line,#e6ebf2); margin-top: 16rpx; padding-top: 16rpx; }
@@ -38,8 +44,9 @@ textarea { height: 160rpx; }
 
 /* 布局尺寸以 Web 的手机页面为基准。 */
 .tabScreen { padding-top: calc(var(--status-inset, 20px) + 32rpx); }
+.detailScreen { padding-top: calc(var(--status-inset, 20px) + 8rpx); }
 .screen > .panel:first-child { margin-top: 16rpx; }
-.pageIntro { margin-bottom: 48rpx; padding-right: 184rpx; }
+.pageIntro { margin-bottom: 48rpx; text-align: center; }
 .sectionCaption { color: var(--muted); font-size: calc(var(--font, 30rpx) - 4rpx); font-weight: 600; padding-left: 8rpx; }
 .segment { display: flex; gap: 4rpx; padding: 6rpx; background: var(--input); border-radius: 30rpx; }
 .segment button { flex: 1; padding: 15rpx 4rpx; color: var(--muted); background: transparent; border-radius: 24rpx; white-space: nowrap; }
@@ -53,7 +60,7 @@ textarea { height: 160rpx; }
 .shortcuts button { width: 100%; min-width: 0; padding: 16rpx 0; color: var(--text); background: var(--card); border-radius: 34rpx; font-size: calc(var(--font, 30rpx) - 7rpx); }
 .shortcutIcon { display: block; font-size: 38rpx; line-height: 1.35; margin-bottom: 6rpx; }
 
-.detailHeader { display: flex; align-items: center; gap: 16rpx; min-height: 76rpx; margin-bottom: 28rpx; padding-right: 170rpx; }
-.detailHeader .heading { overflow-wrap: break-word; }
-button.backButton { display: flex; align-items: center; justify-content: center; flex: none; width: 52rpx; height: 76rpx; padding: 0; background: transparent; color: var(--accent); }
+.detailHeader { position: relative; display: flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 84rpx; margin-bottom: 28rpx; padding: 0 170rpx; }
+.detailHeader .heading { max-width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+button.backButton { position: absolute; left: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 64rpx; height: 84rpx; margin: 0; padding: 0; background: transparent; color: var(--accent); }
 .backChevron { width: 13rpx; height: 13rpx; border-left: 4rpx solid currentColor; border-bottom: 4rpx solid currentColor; transform: rotate(45deg); }

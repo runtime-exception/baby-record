@@ -9,19 +9,18 @@ import IconPicker from '@/components/form/IconPicker.vue';
 import { diaperApi } from '@/api/diaper';
 import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
-import { useDashboardStore } from '@/stores/dashboard';
 import { ALL_DIAPER_TYPES, DIAPER_TYPE_LABELS, type DiaperType } from '@baby-record/shared';
 
 const router = useRouter();
 const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
-const dashStore = useDashboardStore();
 
 const type = ref<DiaperType>('BOTH');
 const time = ref(Date.now());
 const remark = ref('');
 const submitting = ref(false);
+const saved = ref(false);
 
 const typeOptions = ALL_DIAPER_TYPES.map((v) => ({
   label: DIAPER_TYPE_LABELS[v],
@@ -30,6 +29,7 @@ const typeOptions = ALL_DIAPER_TYPES.map((v) => ({
 }));
 
 async function onSubmit() {
+  if (submitting.value || saved.value) return;
   const baby = babyStore.currentBaby;
   const user = userStore.currentUser;
   if (!baby || !user) {
@@ -45,9 +45,9 @@ async function onSubmit() {
       remark: remark.value || undefined,
       creatorId: user.id,
     });
+    saved.value = true;
     message.success('纸尿裤记录已保存');
-    await dashStore.fetch(baby.id);
-    router.push('/');
+    await router.push('/');
   } catch {
     // 错误已由 request 拦截器统一提示
   } finally {
@@ -83,10 +83,10 @@ async function onSubmit() {
 
       <button
         class="w-full py-3.5 rounded-2xl bg-ios-blue text-white font-semibold active:scale-95 transition-transform duration-150 disabled:opacity-60"
-        :disabled="submitting"
+        :disabled="submitting || saved"
         @click="onSubmit"
       >
-        {{ submitting ? '保存中…' : '保存记录' }}
+        {{ saved ? '已保存' : submitting ? '保存中…' : '保存记录' }}
       </button>
     </div>
   </div>

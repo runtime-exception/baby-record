@@ -31,8 +31,8 @@ export class GrowthService {
 
   async create(dto: CreateGrowthDto): Promise<GrowthVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
-    if (dto.height === undefined && dto.weight === undefined) {
-      throw new BusinessException(ErrorCode.PARAM_MISSING, '身高与体重至少填写一项');
+    if (dto.height == null && dto.weight == null && dto.headCircumference == null) {
+      throw new BusinessException(ErrorCode.PARAM_MISSING, '请填写至少一项成长数据');
     }
     const record = await this.prisma.growthRecord.create({
       data: {
@@ -66,11 +66,10 @@ export class GrowthService {
     return new PaginatedResult(list.map((r) => this.toVo(r)), total, query.page, query.pageSize);
   }
 
-  /** 最新一次测量（供首页展示，任一身高/体重） */
-  async findLatest(babyId: string): Promise<GrowthVo | null> {
+  async findLatest(babyId: string, metric?: 'height' | 'weight'): Promise<GrowthVo | null> {
     const record = await this.prisma.growthRecord.findFirst({
-      where: { babyId },
-      orderBy: { measureTime: 'desc' },
+      where: { babyId, ...(metric && { [metric]: { not: null } }) },
+      orderBy: [{ measureTime: 'desc' }, { id: 'desc' }],
     });
     return record ? this.toVo(record) : null;
   }
@@ -82,16 +81,22 @@ export class GrowthService {
   }
 
   async update(id: number, dto: UpdateGrowthDto): Promise<GrowthVo> {
-    await this.findOne(id);
-    const record = await this.prisma.growthRecord.update({
-      where: { id },
-      data: {
-        ...(dto.height !== undefined && { height: dto.height }),
-        ...(dto.weight !== undefined && { weight: dto.weight }),
-        ...(dto.headCircumference !== undefined && { headCircumference: dto.headCircumference }),
-        ...(dto.measureTime !== undefined && { measureTime: new Date(dto.measureTime) }),
-        ...(dto.remark !== undefined && { remark: dto.remark }),
-      },
+    const record = await this.prisma.$transaction(async (db) => {
+      const [current] = await db.$queryRaw<Pick<GrowthRecord, 'height' | 'weight' | 'headCircumference'>[]>`
+        SELECT height, weight, head_circumference AS "headCircumference"
+        FROM growth_record WHERE id = ${id} FOR UPDATE`;
+      if (!current) throw new BusinessException(ErrorCode.RECORD_NOT_FOUND);
+      const fields = ['height', 'weight', 'headCircumference'] as const;
+      if (fields.every((key) => (dto[key] === undefined ? current[key] : dto[key]) == null)) {
+        throw new BusinessException(ErrorCode.PARAM_MISSING, '请填写至少一项成长数据');
+      }
+      return db.growthRecord.update({
+        where: { id },
+        data: {
+          height: dto.height, weight: dto.weight, headCircumference: dto.headCircumference, remark: dto.remark,
+          measureTime: dto.measureTime === undefined ? undefined : new Date(dto.measureTime),
+        },
+      });
     });
     return this.toVo(record);
   }

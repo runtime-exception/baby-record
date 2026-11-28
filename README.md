@@ -109,16 +109,16 @@ baby-record-system
 **连接外部 PostgreSQL（默认）**：
 
 ```bash
-# 复制部署配置并填写微信小程序凭据和数据库连接信息
-cp .env.example .env
-# 编辑 .env
+# 首次部署时复制模板，已有 .env 时直接编辑已有文件
+cp -n .env.example .env
+# 填写微信凭据，以及 DATABASE_URL 或数据库分项参数
 docker compose up -d --build
 # 访问 http://localhost:8080
 ```
 
 **启用内置 PostgreSQL**（启动时执行迁移）：
 
-编辑 `docker-compose.yml`，取消注释 `postgres` 服务、`app.depends_on` 与 `volumes`，然后：
+编辑 `docker-compose.yml`，取消注释 `postgres` 服务、`app.depends_on` 与 `volumes`。使用内置数据库时，将 `DATABASE_HOST` 设为 `postgres`、`DATABASE_PORT` 设为 `5432`，并清空外部连接串。
 
 ```bash
 docker compose up -d --build
@@ -198,6 +198,7 @@ pnpm dev           # 即 pnpm dev:frontend
 |---|---|---|
 | `DATABASE_HOST` / `DATABASE_PORT` / `DATABASE_NAME` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` | — | 数据库连接参数（拼接为 `DATABASE_URL`） |
 | `DATABASE_URL` | — | 完整连接串，填写则优先使用。密码含 `@` 需编码为 `%40` |
+| `BABY_RECORD_DATABASE_URL` | — | 根 Compose 专用连接串。多服务共用环境配置时，此值优先于 `DATABASE_URL` 和分项参数 |
 | `APP_PORT` | `3000` | 后端服务端口 |
 | `NODE_ENV` | `development` | 运行环境 |
 | `API_PREFIX` | `api/v1` | API 全局前缀 |

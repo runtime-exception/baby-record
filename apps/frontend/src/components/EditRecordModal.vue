@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useAppFeedback } from '@/design-system/feedback';
 import AppSheet from '@/design-system/AppSheet.vue';
 import AppInput from '@/design-system/AppInput.vue';
+import AppNumberInput from '@/design-system/AppNumberInput.vue';
 import IconPicker from '@/components/form/IconPicker.vue';
 import DateTimePicker from '@/components/form/DateTimePicker.vue';
 import ExerciseRecordFields from '@/components/form/ExerciseRecordFields.vue';
@@ -16,6 +17,7 @@ import { sleepApi } from '@/api/sleep';
 import { supplementApi } from '@/api/supplement';
 import { activityApi } from '@/api/activity';
 import { temperatureApi } from '@/api/temperature';
+import { growthApi } from '@/api/growth';
 import { foodApi } from '@/api/food';
 import {
   FEEDING_TYPE_LABELS,
@@ -49,6 +51,14 @@ const exerciseAmount = ref<string | null>(null);
 const exerciseUnit = ref<ExerciseUnit | null>(null);
 const description = ref('');
 const temperature = ref(36.5);
+const growthMetrics = [
+  { key: 'height', label: '身高（cm）', min: 20, max: 160 },
+  { key: 'weight', label: '体重（kg）', min: 0.5, max: 60 },
+  { key: 'headCircumference', label: '头围（cm）', min: 20, max: 80 },
+] as const;
+const growthValues = ref<Record<typeof growthMetrics[number]['key'], number | null>>({
+  height: null, weight: null, headCircumference: null,
+});
 const submitting = ref(false);
 const foods = ref<{ id: number; name: string }[]>([]);
 const feedingFoodIds = ref<number[]>([]);
@@ -68,6 +78,7 @@ const titleMap: Record<TimelineEntry['type'], string> = {
   activity: '事件',
   temperature: '体温',
   foodAllergy: '辅食排敏',
+  growth: '成长测量',
 };
 const entryTitle = computed(() => (props.entry?.type === 'activity' && eventType.value === '运动' ? '运动' : props.entry ? titleMap[props.entry.type] : ''));
 const feedingType = computed(() => feedingTypeForComponents(feedingComponents.value));
@@ -141,6 +152,10 @@ watch(
       time.value = new Date(r.measureTime as string).getTime();
       temperature.value = Number(r.temperature);
       remark.value = (r.remark as string) || '';
+    } else if (e.type === 'growth') {
+      time.value = new Date(r.measureTime as string).getTime();
+      for (const metric of growthMetrics) growthValues.value[metric.key] = (r[metric.key] as number | null) ?? null;
+      remark.value = (r.remark as string) || '';
     }
   },
   { immediate: true },
@@ -210,6 +225,12 @@ async function onSave() {
       });
     } else if (e.type === 'temperature') {
       await temperatureApi.update(r.id, { temperature: temperature.value, measureTime: iso(time.value), remark: remark.value || undefined });
+    } else if (e.type === 'growth') {
+      if (Object.values(growthValues.value).every((value) => value === null)) {
+        message.warning('请填写至少一项成长数据');
+        return;
+      }
+      await growthApi.update(r.id, { ...growthValues.value, measureTime: iso(time.value), remark: remark.value });
     }
     message.success('已更新');
     emit('saved');
@@ -279,6 +300,12 @@ async function onSave() {
               <div class="bg-ios-card rounded-3xl p-5 shadow-card mt-3"><p class="text-base font-semibold text-ios-label mb-2">描述</p><AppInput v-model:value="description" textarea :rows="2" /></div>
             </div>
             <div v-else class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-lg font-semibold text-ios-label">睡眠记录</p><p class="text-base text-ios-secondary mt-2">可在“修改时间”中调整开始和结束时间。</p></div>
+            <div v-if="entry.type === 'growth'" class="bg-ios-card rounded-3xl p-5 shadow-card space-y-3">
+              <label v-for="metric in growthMetrics" :key="metric.key" class="block">
+                {{ metric.label }}
+                <AppNumberInput v-model:value="growthValues[metric.key]" :min="metric.min" :max="metric.max" :step="0.01" />
+              </label>
+            </div>
             <div v-if="entry.type !== 'temperature'" class="bg-ios-card rounded-3xl p-5 shadow-card"><p class="text-base font-semibold text-ios-label mb-2">备注（选填）</p><AppInput v-model:value="remark" textarea :rows="3" /></div>
           </div>
           <button class="w-full mt-4 min-h-16 rounded-2xl bg-ios-blue text-white text-lg font-semibold" @click="seniorStep = 'confirm'">下一步</button>
@@ -339,6 +366,12 @@ async function onSave() {
             <WheelPicker v-model="temperature" :options="Array.from({ length: 51 }, (_, i) => ({ label: `${(36 + i / 10).toFixed(1)}℃`, value: 36 + i / 10 }))" class="mt-2" />
           </div>
 
+          <div v-if="entry.type === 'growth'" class="bg-ios-card rounded-3xl p-4 shadow-card space-y-3">
+            <label v-for="metric in growthMetrics" :key="metric.key" class="block">
+              {{ metric.label }}
+              <AppNumberInput v-model:value="growthValues[metric.key]" :min="metric.min" :max="metric.max" :step="0.01" />
+            </label>
+          </div>
           <div v-if="entry.type === 'diaper'" class="bg-ios-card rounded-3xl p-4 shadow-card">
             <label class="text-sm font-medium text-ios-secondary">类型</label>
             <IconPicker v-model="diaperType" :options="diaperTypeOptions" active-color="bg-ios-blue" class="mt-3" />

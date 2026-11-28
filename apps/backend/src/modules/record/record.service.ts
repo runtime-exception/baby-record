@@ -37,7 +37,7 @@ export class RecordService {
     const includeCreator = {
       creator: { select: { id: true, name: true, role: true } },
     } as const;
-    const [feeding, diaper, sleep, supplement, activity, temperature, foodAllergy] = await Promise.all([
+    const [feeding, diaper, sleep, supplement, activity, temperature, foodAllergy, growth] = await Promise.all([
       this.prisma.feeding.findMany({
         where: { babyId, feedingTime: { gte: start, lte: end } },
         orderBy: { feedingTime: 'desc' },
@@ -53,6 +53,11 @@ export class RecordService {
         orderBy: { exposureTime: 'desc' },
         include: { ...includeCreator, food: true },
       }),
+      this.prisma.growthRecord.findMany({
+        where: { babyId, measureTime: { gte: start, lte: end } },
+        orderBy: [{ measureTime: 'desc' }, { id: 'desc' }],
+        include: includeCreator,
+      }),
     ]);
     return {
       feeding: serialize(feeding.map((record) => ({
@@ -60,10 +65,11 @@ export class RecordService {
         foods: record.foods.map((item) => item.food),
       }))),
       diaper: serialize(diaper),
-      sleep: serialize(sleep),
+      sleep: serialize(sleep.map((record) => ({ ...record, ongoing: record.endTime === null }))),
       supplement: serialize(supplement),
       activity: serialize(activity),
       temperature: serialize(temperature),
+      growth: serialize(growth),
       foodAllergy: serialize(
         foodAllergy.map((record) => {
           const observations = record.observations as FoodAllergyObservations;

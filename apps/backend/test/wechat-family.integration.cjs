@@ -57,7 +57,7 @@ async function main() {
       await delay(100);
     }
   }
-  const legacy = await prisma.baby.findMany({ where: { name: { startsWith: 'Legacy' } }, orderBy: { id: 'asc' } });
+  const legacy = await prisma.baby.findMany({ where: { name: { startsWith: 'Legacy' } }, orderBy: { name: 'asc' } });
   assert.equal(legacy.length, 2);
   assert.match(legacy[0].id, /^[a-f0-9]{16}$/);
   assert.match(legacy[1].id, /^[a-f0-9]{16}$/);
@@ -66,11 +66,13 @@ async function main() {
     include: { creator: true, foods: { include: { food: true } } }, orderBy: { id: 'asc' },
   });
   assert.equal(history.length, 2);
-  assert.equal(history[0].creator.name, '历史记录人');
-  assert.equal(history[0].foods[0].food.name, '历史辅食');
-  assert.equal(history[0].foods[0].food.babyId, legacy[0].id);
-  assert.equal(history[1].foods[0].food.babyId, legacy[1].id);
-  assert.equal(await prisma.foodAllergyRecord.count({ where: { babyId: legacy[0].id, foodId: history[0].foods[0].foodId } }), 1);
+  for (const feeding of history) {
+    assert.equal(feeding.creator.name, '历史记录人');
+    assert.equal(feeding.foods[0].food.name, '历史辅食');
+    assert.equal(feeding.foods[0].food.babyId, feeding.babyId);
+  }
+  const alphaFeeding = history.find((feeding) => feeding.babyId === legacy[0].id);
+  assert.equal(await prisma.foodAllergyRecord.count({ where: { babyId: legacy[0].id, foodId: alphaFeeding.foods[0].foodId } }), 1);
   assert.equal(await prisma.supplementConfig.count({ where: { babyId: legacy[0].id, name: '历史补剂' } }), 1);
   assert.equal(await prisma.exerciseConfig.count({ where: { babyId: legacy[1].id, name: '历史运动' } }), 1);
 
@@ -90,6 +92,44 @@ async function main() {
   assert.equal((await okay('/babies', dadAuth))[0].membership.isAdmin, true);
   assert.equal((await okay('/babies', otherAuth)).length, 1);
   await blocked('/babies/' + baby.id, otherAuth);
+
+  const [startResult, createResult] = await Promise.all([
+    send('/sleeps/start', { ...dadAuth, body: { babyId: baby.id } }),
+    send('/sleeps', { ...dadAuth, body: { babyId: baby.id, startTime: new Date().toISOString() } }),
+  ]);
+  assert.equal([startResult, createResult].filter((result) => result.code === 0).length, 1);
+  const activeSleep = startResult.code === 0 ? startResult.data : createResult.data;
+  const firstDay = '2026-01-10';
+  const secondDay = '2026-01-11';
+  await okay('/sleeps', { ...dadAuth, body: {
+    babyId: baby.id, startTime: firstDay + 'T22:00:00+08:00', endTime: secondDay + 'T06:00:00+08:00',
+  } });
+  const ongoingDay = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date(activeSleep.startTime));
+  const ongoingHistory = await okay('/records/daily?babyId=' + baby.id + '&date=' + ongoingDay, dadAuth);
+  assert.equal(ongoingHistory.sleep.find((item) => item.id === activeSleep.id)?.ongoing, true);
+  const range = '&range=custom&startDate=' + firstDay + '&endDate=' + secondDay;
+  assert.deepEqual((await okay('/charts/sleep?babyId=' + baby.id + range, dadAuth)).series[0].data, [120, 360]);
+  const lastDayOnly = '&range=custom&startDate=' + secondDay + '&endDate=' + secondDay;
+  assert.equal((await okay('/statistics/sleep?babyId=' + baby.id + lastDayOnly, dadAuth)).totalMinutes, 360);
+
+  await okay('/growths', { ...dadAuth, body: { babyId: baby.id, height: 72, measureTime: firstDay + 'T12:00:00+08:00' } });
+  await okay('/growths', { ...dadAuth, body: { babyId: baby.id, weight: 8, measureTime: secondDay + 'T12:00:00+08:00' } });
+  const summary = await okay('/dashboard?babyId=' + baby.id, dadAuth);
+  assert.equal(summary.latestGrowth.height, 72);
+  assert.equal(summary.latestGrowth.weight, 8);
+  const latestPath = '/growths/latest?babyId=' + baby.id;
+  assert.equal((await okay(latestPath + '&metric=height', dadAuth)).height, 72);
+  assert.equal((await okay(latestPath + '&metric=weight', dadAuth)).weight, 8);
+  assert.equal((await okay(latestPath, dadAuth)).height, null);
+  const growthHistory = await okay('/records/range?babyId=' + baby.id + range.replace('&range=custom', ''), dadAuth);
+  assert.deepEqual(growthHistory.growth.map(({ height, weight }) => [height, weight]), [[null, 8], [72, null]]);
+  const measurement = await okay('/growths', { ...dadAuth, body: { babyId: baby.id, height: 74, weight: 9, measureTime: new Date().toISOString() } });
+  const editPath = '/growths/' + measurement.id;
+  const edits = await Promise.all(['height', 'weight'].map((field) =>
+    send(editPath, { ...dadAuth, method: 'PATCH', body: { [field]: null } })));
+  assert.equal(edits.filter((edit) => edit.code === 0).length, 1);
+  const edited = await okay(editPath, dadAuth);
+  assert.equal([edited.height, edited.weight].filter((value) => value !== null).length, 1);
   await blocked('/dashboard?babyId=' + baby.id, otherAuth);
   await blocked('/statistics/overview?babyId=' + baby.id, otherAuth);
   await blocked('/foods', { ...otherAuth, scope: baby.id });
@@ -110,7 +150,7 @@ async function main() {
   await blocked('/users', dadAuth);
 
   const profileImage = new FormData();
-  profileImage.append('file', new Blob([Buffer.from('89504e470d0a1a0a', 'hex')], { type: 'image/png' }), 'test.png');
+  profileImage.append('file', new Blob([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(230_000)], { type: 'image/png' }), 'test.png');
   const avatar = await okay('/babies/' + baby.id + '/avatar', { ...dadAuth, body: profileImage });
   assert.match(avatar.avatar, /^babies\/[a-f0-9]{16}\/avatar/);
   await blocked('/' + avatar.avatar, otherAuth);
@@ -138,6 +178,10 @@ async function main() {
   await okay('/family/' + baby.id + '/members/' + outsider.accountId, { ...dadAuth, method: 'PATCH', body: { status: 'REJECTED' } });
   assert.equal((await okay('/family/applications', otherAuth))[0].status, 'REJECTED');
   await blocked('/babies/' + baby.id, otherAuth);
+  await okay('/family/applications', { ...otherAuth, body: { ...application, role: 'DAD' } });
+  assert.equal((await okay('/family/applications', otherAuth))[0].status, 'PENDING');
+  await okay('/family/applications', { ...momAuth, body: application });
+  assert.equal((await okay('/family/applications', momAuth))[0].status, 'PENDING');
 
   const code = '0123456789abcdef0123456789abcdef';
   await prisma.babyClaim.create({ data: { babyId: legacy[0].id, codeHash: hash(code), expiresAt: new Date(Date.now() + 60000) } });

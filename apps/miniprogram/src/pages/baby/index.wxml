@@ -1,14 +1,15 @@
 <page-meta page-style="{{appearanceStyle}}" />
-<view class="screen tabScreen">
+<view class="screen detailScreen">
   <view class="detailHeader">
     <button class="backButton" aria-label="返回" bindtap="back"><view class="backChevron"></view></button>
     <view class="heading">{{editing ? '编辑宝宝' : '添加宝宝'}}</view>
   </view>
   <view class="empty" wx:if="{{!ready}}">正在加载宝宝资料…</view>
   <block wx:else>
-    <view class="panel row babyIdRow" wx:if="{{editing}}">
-      <view class="babyIdLine"><text class="muted">宝宝 ID</text><text class="babyIdValue">{{editing}}</text></view>
-      <button class="textAction" bindtap="copyId">复制</button>
+    <view class="panel babyIdRow" wx:if="{{editing}}">
+      <text class="muted babyIdLabel">宝宝 ID</text>
+      <text class="babyIdValue" selectable>{{editing}}</text>
+      <button class="textAction babyIdCopy" bindtap="copyId">复制</button>
     </view>
     <view class="panel">
       <text class="fieldTitle">姓名</text><input value="{{values.name}}" data-key="name" bindinput="field" placeholder="请输入宝宝姓名" />

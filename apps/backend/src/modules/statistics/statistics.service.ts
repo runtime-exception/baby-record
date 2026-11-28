@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { DateRangeUtil, RangeType } from '../../common/utils/date-range.util';
 import { TimeUtil } from '../../common/utils/time.util';
 import { StatsQueryDto } from '../../common/dto/stats-query.dto';
+import { sleepMinutesInRange, sleepOverlappingRange } from '../sleep/sleep-rules';
 
 @Injectable()
 export class StatisticsService {
@@ -15,14 +16,14 @@ export class StatisticsService {
     const [feedings, diapers, sleeps, supplements, activities] = await Promise.all([
       this.prisma.feeding.findMany({ where: { babyId: query.babyId, feedingTime: { gte: start, lte: end } } }),
       this.prisma.diaper.findMany({ where: { babyId: query.babyId, changeTime: { gte: start, lte: end } } }),
-      this.prisma.sleep.findMany({ where: { babyId: query.babyId, startTime: { gte: start, lte: end } } }),
+      this.prisma.sleep.findMany({ where: sleepOverlappingRange(query.babyId, start, end) }),
       this.prisma.supplement.findMany({ where: { babyId: query.babyId, takeTime: { gte: start, lte: end } } }),
       this.prisma.activity.findMany({ where: { babyId: query.babyId, eventTime: { gte: start, lte: end } } }),
     ]);
     return {
       feeding: this.feedingStats(feedings),
       diaper: this.diaperStats(diapers),
-      sleep: this.sleepStats(sleeps),
+      sleep: this.sleepStats(sleeps, start, end),
       supplement: this.supplementStats(supplements),
       activity: this.activityStats(activities),
     };
@@ -42,8 +43,8 @@ export class StatisticsService {
 
   async sleep(query: StatsQueryDto) {
     const { start, end } = DateRangeUtil.resolve(query.range as RangeType, query.startDate, query.endDate);
-    const list = await this.prisma.sleep.findMany({ where: { babyId: query.babyId, startTime: { gte: start, lte: end } } });
-    return this.sleepStats(list);
+    const list = await this.prisma.sleep.findMany({ where: sleepOverlappingRange(query.babyId, start, end) });
+    return this.sleepStats(list, start, end);
   }
 
   async supplement(query: StatsQueryDto) {
@@ -89,12 +90,12 @@ export class StatisticsService {
     return { total: list.length, pee, poop };
   }
 
-  sleepStats(list: Sleep[]) {
+  sleepStats(list: Sleep[], start: Date, end: Date) {
     let total = 0;
     let daytime = 0;
     let night = 0;
     for (const s of list) {
-      const dur = s.durationMinutes ?? 0;
+      const dur = sleepMinutesInRange(s, start, end);
       total += dur;
       if (s.sleepType === 'DAYTIME') daytime += dur;
       else if (s.sleepType === 'NIGHT') night += dur;

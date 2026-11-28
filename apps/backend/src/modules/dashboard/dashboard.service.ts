@@ -32,7 +32,7 @@ export class DashboardService {
 
   async overview(babyId: string) {
     const now = new Date();
-    const [baby, lastFeeding, lastMilkFeeding, lastDiaper, lastSleep, latestTemperature, latestGrowth, allergyRecords] = await Promise.all([
+    const [baby, lastFeeding, lastMilkFeeding, lastDiaper, lastSleep, latestTemperature, latestHeight, latestWeight, allergyRecords] = await Promise.all([
       this.prisma.baby.findUnique({ where: { id: babyId }, select: { birthday: true } }),
       this.prisma.feeding.findFirst({
         where: { babyId, feedingTime: { lte: now } },
@@ -51,7 +51,16 @@ export class DashboardService {
       this.prisma.diaper.findFirst({ where: { babyId, changeTime: { lte: now } }, orderBy: { changeTime: 'desc' } }),
       this.prisma.sleep.findFirst({ where: { babyId, startTime: { lte: now } }, orderBy: { startTime: 'desc' } }),
       this.prisma.temperature.findFirst({ where: { babyId, measureTime: { lte: now } }, orderBy: { measureTime: 'desc' } }),
-      this.prisma.growthRecord.findFirst({ where: { babyId }, orderBy: { measureTime: 'desc' } }),
+      this.prisma.growthRecord.findFirst({
+        where: { babyId, height: { not: null } },
+        orderBy: [{ measureTime: 'desc' }, { id: 'desc' }],
+        select: { height: true, measureTime: true },
+      }),
+      this.prisma.growthRecord.findFirst({
+        where: { babyId, weight: { not: null } },
+        orderBy: [{ measureTime: 'desc' }, { id: 'desc' }],
+        select: { weight: true, measureTime: true },
+      }),
       this.prisma.foodAllergyRecord.findMany({
         where: { babyId },
         orderBy: [{ exposureTime: 'desc' }, { id: 'desc' }],
@@ -74,11 +83,11 @@ export class DashboardService {
       latestTemperature: latestTemperature
         ? { temperature: Number(latestTemperature.temperature), measureTime: latestTemperature.measureTime.toISOString() }
         : null,
-      latestGrowth: latestGrowth
+      latestGrowth: latestHeight || latestWeight
         ? {
-            height: latestGrowth.height === null ? null : Number(latestGrowth.height),
-            weight: latestGrowth.weight === null ? null : Number(latestGrowth.weight),
-            measureTime: latestGrowth.measureTime.toISOString(),
+            height: latestHeight ? Number(latestHeight.height) : null,
+            weight: latestWeight ? Number(latestWeight.weight) : null,
+            measureTime: new Date(Math.max(latestHeight?.measureTime.getTime() ?? -Infinity, latestWeight?.measureTime.getTime() ?? -Infinity)).toISOString(),
           }
         : null,
       foodAllergySummary: this.foodAllergySummary(allergyRecords),

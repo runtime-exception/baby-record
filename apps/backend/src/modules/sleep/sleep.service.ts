@@ -40,36 +40,28 @@ export class SleepService {
     const endTime = dto.endTime ? new Date(dto.endTime) : null;
     if (endTime) ensureSleepEndNotInFuture(endTime);
     const durationMinutes = endTime ? calculateSleepDurationMinutes(startTime, endTime) : null;
-    const sleep = await this.prisma.sleep.create({
-      data: {
-        babyId: dto.babyId,
-        sleepType: dto.sleepType ?? resolveSleepType(startTime),
-        startTime,
-        endTime,
-        durationMinutes,
-        remark: dto.remark,
-        creatorId: dto.creatorId,
-      },
-    });
+    const data: Prisma.SleepUncheckedCreateInput = {
+      babyId: dto.babyId,
+      sleepType: dto.sleepType ?? resolveSleepType(startTime),
+      startTime,
+      endTime,
+      durationMinutes,
+      remark: dto.remark,
+      creatorId: dto.creatorId,
+    };
+    const sleep = endTime ? await this.prisma.sleep.create({ data }) : await this.createOngoing(data);
     return this.toVo(sleep);
   }
 
   /** 开始睡眠：创建进行中记录 */
   async start(dto: StartSleepDto): Promise<SleepVo> {
     await this.ensureRefs(dto.babyId, dto.creatorId);
-    const ongoing = await this.prisma.sleep.findFirst({
-      where: { babyId: dto.babyId, endTime: null },
-    });
-    if (ongoing) throw new BusinessException(ErrorCode.SLEEP_ALREADY_ONGOING);
-
-    const sleep = await this.prisma.sleep.create({
-      data: {
-        babyId: dto.babyId,
-        sleepType: dto.sleepType ?? SleepType.DAYTIME,
-        startTime: dto.startTime ? new Date(dto.startTime) : new Date(),
-        remark: dto.remark,
-        creatorId: dto.creatorId,
-      },
+    const sleep = await this.createOngoing({
+      babyId: dto.babyId,
+      sleepType: dto.sleepType ?? SleepType.DAYTIME,
+      startTime: dto.startTime ? new Date(dto.startTime) : new Date(),
+      remark: dto.remark,
+      creatorId: dto.creatorId,
     });
     return this.toVo(sleep);
   }
@@ -84,7 +76,7 @@ export class SleepService {
     ensureSleepEndNotInFuture(endTime);
     const durationMinutes = calculateSleepDurationMinutes(sleep.startTime, endTime);
     const updated = await this.prisma.sleep.update({
-      where: { id },
+      where: { id, endTime: null, startTime: sleep.startTime },
       data: {
         endTime,
         durationMinutes,
@@ -114,8 +106,27 @@ export class SleepService {
         ? calculateSleepDurationMinutes(finalStart, finalEnd)
         : null;
     }
-    const sleep = await this.prisma.sleep.update({ where: { id }, data });
+    const where = { id, startTime: current.startTime, endTime: current.endTime };
+    const sleep = dto.endTime === null
+      ? await this.withOngoingLock(current.babyId, (db) => db.sleep.update({ where, data }), id)
+      : await this.prisma.sleep.update({ where, data });
     return this.toVo(sleep);
+  }
+
+  private createOngoing(data: Prisma.SleepUncheckedCreateInput) {
+    return this.withOngoingLock(data.babyId, (db) => db.sleep.create({ data }));
+  }
+
+  private withOngoingLock<T>(babyId: string, write: (db: Prisma.TransactionClient) => Promise<T>, exceptId?: number) {
+    return this.prisma.$transaction(async (db) => {
+      await db.$queryRaw`SELECT id FROM baby WHERE id = ${babyId} FOR UPDATE`;
+      const ongoing = await db.sleep.findFirst({
+        where: { babyId, endTime: null, ...(exceptId !== undefined && { id: { not: exceptId } }) },
+        select: { id: true },
+      });
+      if (ongoing) throw new BusinessException(ErrorCode.SLEEP_ALREADY_ONGOING);
+      return write(db);
+    });
   }
 
   async findAll(query: QuerySleepDto): Promise<PaginatedResult<SleepVo>> {

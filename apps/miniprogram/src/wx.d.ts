@@ -1,10 +1,27 @@
 declare interface WxError { errMsg: string }
+declare interface WxTouch { clientX: number; clientY: number }
 declare interface WxEvent<T = Record<string, never>> {
   detail: T;
   currentTarget: { dataset: Record<string, string | number | boolean> };
+  touches?: WxTouch[];
+  changedTouches?: WxTouch[];
 }
 declare interface WxInput extends WxEvent<{ value: string }> {}
 declare interface WxSelection extends WxEvent<{ value: string[] }> {}
+declare interface WxRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  right?: number;
+  bottom?: number;
+}
+declare interface WxSelectorQuery {
+  in(component: unknown): WxSelectorQuery;
+  select(selector: string): WxSelectorQuery;
+  boundingClientRect(callback: (rect: WxRect | null) => void): WxSelectorQuery;
+  exec(callback?: () => void): void;
+}
 declare interface WxCanvas {
   setStrokeStyle(value: string): void;
   setFillStyle(value: string): void;
@@ -28,7 +45,19 @@ declare interface WxImageInfo {
   height: number;
   type: string;
 }
+declare interface WxFileSystemManager {
+  access(options: { path: string; success: () => void; fail: () => void }): void;
+  writeFile(options: {
+    filePath: string;
+    data: string;
+    encoding: 'base64';
+    success: () => void;
+    fail: () => void;
+  }): void;
+}
 declare const wx: {
+  env: { USER_DATA_PATH: string };
+  getFileSystemManager(): WxFileSystemManager;
   request<T>(options: { url: string; method: string; data?: object; header?: Record<string, string>; timeout?: number; success: (res: { statusCode: number; data: T }) => void; fail: (error: WxError) => void }): void;
   login(options: { success: (res: { code: string }) => void; fail: (error: WxError) => void }): void;
   getStorageSync(key: string): unknown;
@@ -43,14 +72,16 @@ declare const wx: {
   switchTab(options: { url: string }): void;
   setNavigationBarTitle(options: { title: string }): void;
   pageScrollTo(options: { scrollTop: number; duration: number }): void;
+  hideKeyboard(): void;
   stopPullDownRefresh(): void;
-  chooseMedia(options: { count: number; mediaType: ['image']; success: (res: { tempFiles: { tempFilePath: string }[] }) => void }): void;
+  chooseMedia(options: { count: number; mediaType: ['image']; success: (res: { tempFiles: { tempFilePath: string }[] }) => void; fail?: (error: WxError) => void }): void;
   uploadFile(options: { url: string; filePath: string; name: string; header: Record<string, string>; success: (res: { data: string; statusCode: number }) => void; fail: (error: WxError) => void }): void;
   downloadFile(options: { url: string; header: Record<string, string>; success: (res: { statusCode: number; tempFilePath: string }) => void; fail: (error: WxError) => void }): void;
   getAppBaseInfo(): { theme?: 'light' | 'dark' };
   setNavigationBarColor(options: { backgroundColor: string; frontColor: '#ffffff' | '#000000' }): void;
   setTabBarStyle(options: { backgroundColor: string; color: string; selectedColor: string; borderStyle: 'black' | 'white' }): void;
-  getWindowInfo(): { windowWidth: number; statusBarHeight?: number };
+  getWindowInfo(): { windowWidth: number; windowHeight: number; statusBarHeight?: number };
+  createSelectorQuery(): WxSelectorQuery;
   createCanvasContext(id: string): WxCanvas;
   getImageInfo(options: { src: string; success: (info: WxImageInfo) => void; fail: (error: WxError) => void }): void;
   canvasToTempFilePath(options: {
@@ -68,9 +99,23 @@ declare const wx: {
   }): void;
 };
 declare function App(options: object): void;
+declare function setTimeout(handler: () => void, timeout?: number): number;
+declare function clearTimeout(id: number | undefined): void;
 declare function setInterval(handler: () => void, timeout?: number): number;
 declare function clearInterval(id: number | undefined): void;
 declare function Page<D, M>(options: { data: D } & M & ThisType<M & {
   data: D;
   setData(data: Partial<D> & Record<string, unknown>, callback?: () => void): void;
 }>): void;
+type WxComponentInstance<D, P extends Record<string, { value: unknown }>, M> = M & {
+  data: D & { [K in keyof P]: P[K]['value'] };
+  setData(data: Partial<D> & Record<string, unknown>, callback?: () => void): void;
+  triggerEvent(name: string): void;
+};
+declare function Component<D, P extends Record<string, { type: unknown; value: unknown }>, M>(options: {
+  options?: { styleIsolation: 'apply-shared' };
+  properties: P;
+  data: D;
+  lifetimes: { attached(): void } & ThisType<WxComponentInstance<D, P, M>>;
+  methods: M & ThisType<WxComponentInstance<D, P, M>>;
+}): void;

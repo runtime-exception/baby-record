@@ -64,18 +64,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
         httpStatus = HttpStatus.OK;
       } else {
         code = ErrorCode.INTERNAL_ERROR;
-        message = `数据库错误: ${exception.code}`;
+        message = ErrorMessage[ErrorCode.INTERNAL_ERROR];
       }
     }
-    // 3. 其他 Error
-    else if (exception instanceof Error) {
-      message = exception.message || message;
-    }
-
     // 日志
     if (httpStatus >= 500) {
       this.logger.error(
-        `[${request.method}] ${request.url} -> ${message}`,
+        `[${request.method}] ${request.path} -> ${message}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
     } else {

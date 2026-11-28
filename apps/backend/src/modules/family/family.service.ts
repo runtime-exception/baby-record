@@ -55,9 +55,15 @@ export class FamilyService {
     const babyId = parseBabyId(dto.babyId);
     if (await this.prisma.babyMember.count({ where: { babyId, status: 'APPROVED', isAdmin: true } })) {
       const name = await resolveMemberName(this.prisma, accountId, dto);
-      await this.prisma.babyMember.createMany({
-        data: { accountId, babyId, role, name, status: 'PENDING' },
-        skipDuplicates: true,
+      await this.prisma.$transaction(async (db) => {
+        await db.babyMember.createMany({
+          data: { accountId, babyId, role, name, status: 'PENDING' },
+          skipDuplicates: true,
+        });
+        await db.babyMember.updateMany({
+          where: { accountId, babyId, status: { in: ['REJECTED', 'REMOVED'] } },
+          data: { role, name, status: 'PENDING' },
+        });
       });
     }
     return { submitted: true };

@@ -1,0 +1,34 @@
+.recordForm { --formAccent: #4086f4; --formTint: #4086f422; }
+.recordForm.feeding { --formAccent: #efa13e; --formTint: #efa13e22; }
+.recordForm.sleep { --formAccent: #ab61dd; --formTint: #ab61dd22; }
+.recordForm.temperature { --formAccent: #e64968; --formTint: #e6496822; }
+.otherForm { --formAccent: #55b861; --formTint: #55b86122; }
+.formPanel { padding: 30rpx; }
+.formLabel { color: var(--muted); font-weight: 500; font-size: calc(var(--font, 30rpx) - 3rpx); margin-bottom: 18rpx; }
+.inputCaption { color: var(--muted); font-size: calc(var(--font, 30rpx) - 7rpx); margin: 6rpx 0; }
+.recordDateTime { display: grid; grid-template-columns: 3fr 2fr; gap: 22rpx; }
+.recordDateTime picker { background: #fff; color: #17171a; font-variant-numeric: tabular-nums; }
+.timePresets { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12rpx; margin-top: 14rpx; }
+.timePresets button { width: 100%; padding: 20rpx 0; background: #f2f2f7; color: #44444a; font-size: calc(var(--font, 30rpx) - 9rpx); border-radius: 22rpx; white-space: nowrap; }
+.optionGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14rpx; }
+.optionGrid button { width: 100%; min-width: 0; padding: 23rpx 4rpx; color: var(--muted); background: var(--input); font-size: calc(var(--font, 30rpx) - 6rpx); border-radius: 30rpx; }
+.optionGrid .chosen { color: #fff; background: var(--formAccent); }
+.optionIcon { display: block; font-size: 40rpx; margin-bottom: 10rpx; }
+.twoOptions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.fourOptions { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.dictionaryOptions button { padding: 26rpx 20rpx; color: var(--text); text-align: left; border: 1rpx solid var(--line); }
+.measurePicker { position: relative; min-height: 92rpx; padding: 22rpx; text-align: center; font-weight: 650; font-size: calc(var(--font, 30rpx) + 3rpx); }
+.measurePicker text { position: absolute; right: 18rpx; color: var(--muted); }
+.featureLabel { display: flex; align-items: center; gap: 16rpx; font-weight: 600; }
+.featureLabel > text { font-size: 40rpx; }
+.featureLabel .inputCaption { font-weight: 400; }
+.quickSleep { margin-top: 15rpx; }
+.quickSleep button { background: var(--formTint); color: var(--formAccent); font-weight: 600; }
+.sleepActionPanel { text-align: center; padding: 44rpx; }
+.sleepIcon { font-size: 82rpx; margin-bottom: 14rpx; }
+.customSleepPage { box-sizing: border-box; width: 100%; height: 100vh; overflow-y: auto; padding-bottom: calc(64rpx + env(safe-area-inset-bottom)); background: var(--bg, #f2f2f7); }
+.temperatureValue { text-align: center; font-size: calc(var(--font, 30rpx) + 36rpx); font-weight: 700; margin: 32rpx 0; }
+.temperature .center { margin-top: 18rpx; }
+.formPanel textarea { background: transparent; height: 100rpx; min-height: 0; }
+.saveRecord { width: 100%; margin-top: 24rpx; color: #fff; background: var(--formAccent); font-weight: 650; padding: 26rpx 18rpx; border-radius: 30rpx; }
+.cancelRecord { width: 100%; margin-top: 16rpx; color: var(--muted); background: var(--card); padding: 24rpx 18rpx; border-radius: 30rpx; }

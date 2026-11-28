@@ -16,7 +16,6 @@ import { growthApi } from '@/api/growth';
 import { applySupplementDefaults } from '@/design-system/supplement-config';
 import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
-import { useDashboardStore } from '@/stores/dashboard';
 import type { SupplementConfigVo } from '@baby-record/shared';
 
 type Category = 'supplement' | 'allergy' | 'exercise' | 'bath' | 'other' | 'height' | 'weight';
@@ -25,7 +24,6 @@ const router = useRouter();
 const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
-const dashboardStore = useDashboardStore();
 
 const category = ref<Category>('supplement');
 const categoryOptions: { label: string; value: Category; icon: string }[] = [
@@ -79,22 +77,22 @@ const weightInteger = ref(3);
 const weightDecimal = ref(5);
 const growthRemark = ref('');
 
-const heightIntegerOptions = Array.from({ length: 121 }, (_, offset) => ({
-  label: String(30 + offset),
-  value: 30 + offset,
+const heightIntegerOptions = Array.from({ length: 141 }, (_, offset) => ({
+  label: String(20 + offset),
+  value: 20 + offset,
 }));
-const weightIntegerOptions = Array.from({ length: 29 }, (_, offset) => ({
-  label: String(2 + offset),
-  value: 2 + offset,
+const weightIntegerOptions = Array.from({ length: 61 }, (_, value) => ({
+  label: String(value),
+  value,
 }));
 const digitOptions = Array.from({ length: 10 }, (_, value) => ({ label: String(value), value }));
 
 const heightCm = computed(() => Number(`${heightInteger.value}.${heightDecimal.value}`));
 const weightKg = computed(() => Number(`${weightInteger.value}.${weightDecimal.value}`));
-/** 是否有历史测量回填了默认值 */
-const prefilled = ref(false);
-/** 滚轮是否被改动过（避免误存 50.0cm / 3.5kg 的初始占位） */
-const growthTouched = ref(false);
+const heightConfirmed = ref(false);
+const weightConfirmed = ref(false);
+const growthConfirmed = computed(() => isHeight.value ? heightConfirmed.value : weightConfirmed.value);
+const growthValid = computed(() => isHeight.value ? heightCm.value >= 20 && heightCm.value <= 160 : weightKg.value >= 0.5 && weightKg.value <= 60);
 
 const activityEventLabel: Record<Exclude<Category, 'supplement' | 'allergy' | 'height' | 'weight'>, string> = {
   exercise: '运动',
@@ -103,36 +101,38 @@ const activityEventLabel: Record<Exclude<Category, 'supplement' | 'allergy' | 'h
 };
 
 const submitting = ref(false);
+const saved = ref(false);
 
 function selectCategory(value: Category) {
   if (value === 'allergy') router.push('/record/food-allergy');
   else category.value = value;
 }
 
-// 进入页面时用最近一次测量回填默认值（与体温页一致）
 onMounted(async () => {
   try {
     supplements.value = await supplementConfigApi.list();
   } catch {
     supplements.value = [];
   }
+});
 
+watch(category, async (metric, _, onCleanup) => {
+  if (metric !== 'height' && metric !== 'weight') return;
   const baby = babyStore.currentBaby;
-  if (!baby) return;
+  if (!baby || growthConfirmed.value) return;
+  let active = true;
+  onCleanup(() => { active = false; });
   try {
-    const latest = await growthApi.latest(baby.id);
-    if (latest) {
-      prefilled.value = true;
-      if (latest.height != null) {
-        const [i, d] = latest.height.toFixed(1).split('.');
-        heightInteger.value = Number(i);
-        heightDecimal.value = Number(d);
-      }
-      if (latest.weight != null) {
-        const [i, d] = latest.weight.toFixed(1).split('.');
-        weightInteger.value = Number(i);
-        weightDecimal.value = Number(d);
-      }
+    const latest = await growthApi.latest(baby.id, metric);
+    const value = latest?.[metric];
+    if (!active || growthConfirmed.value || value == null) return;
+    const [whole, decimal] = value.toFixed(1).split('.').map(Number);
+    if (metric === 'height') {
+      heightInteger.value = whole;
+      heightDecimal.value = decimal;
+    } else {
+      weightInteger.value = whole;
+      weightDecimal.value = decimal;
     }
   } catch {
     // 网络异常时保留默认值
@@ -146,7 +146,7 @@ async function onSubmit() {
     message.error('请先选择宝宝与身份');
     return;
   }
-  if (submitting.value) return;
+  if (submitting.value || saved.value) return;
   submitting.value = true;
   try {
     if (isSupplement.value) {
@@ -164,8 +164,8 @@ async function onSubmit() {
         creatorId: user.id,
       });
     } else if (isGrowth.value) {
-      if (!prefilled.value && !growthTouched.value) {
-        message.warning(`请先调整${isHeight.value ? '身高' : '体重'}数值`);
+      if (!growthConfirmed.value || !growthValid.value) {
+        message.warning(`请先确认本次${isHeight.value ? '身高' : '体重'}数值`);
         submitting.value = false;
         return;
       }
@@ -176,8 +176,6 @@ async function onSubmit() {
         remark: growthRemark.value.trim() || undefined,
         creatorId: user.id,
       });
-      // 首页月龄旁会展示最新身高体重
-      await dashboardStore.fetch(baby.id);
     } else {
       await activityApi.create({
         babyId: baby.id,
@@ -188,8 +186,9 @@ async function onSubmit() {
         creatorId: user.id,
       });
     }
+    saved.value = true;
     message.success('记录已保存');
-    router.push('/');
+    await router.push('/');
   } catch {
     // 错误已由拦截器提示
   } finally {
@@ -256,10 +255,11 @@ async function onSubmit() {
             <p class="num-display text-xl font-bold text-ios-label">{{ heightCm.toFixed(1) }}<span class="text-xs font-normal text-ios-secondary ml-1">cm</span></p>
           </div>
           <div class="mt-3 grid grid-cols-2 gap-3">
-            <WheelPicker v-model="heightInteger" :options="heightIntegerOptions" @update:model-value="growthTouched = true" />
-            <WheelPicker v-model="heightDecimal" :options="digitOptions" @update:model-value="growthTouched = true" />
+            <WheelPicker v-model="heightInteger" :options="heightIntegerOptions" @update:model-value="heightConfirmed = true" />
+            <WheelPicker v-model="heightDecimal" :options="digitOptions" @update:model-value="heightConfirmed = true" />
           </div>
-          <p class="text-xs text-ios-secondary text-center mt-3">有效范围 30.0 - 150.0 cm</p>
+          <p class="text-xs text-ios-secondary text-center mt-3">有效范围 20.0 - 160.0 cm</p>
+          <button v-if="!heightConfirmed" class="mt-3 w-full text-sm text-ios-blue" @click="heightConfirmed = true">确认当前身高</button>
         </div>
         <div v-else class="bg-ios-card rounded-3xl p-5 shadow-card">
           <div class="flex items-center justify-between">
@@ -267,10 +267,11 @@ async function onSubmit() {
             <p class="num-display text-xl font-bold text-ios-label">{{ weightKg.toFixed(1) }}<span class="text-xs font-normal text-ios-secondary ml-1">kg</span></p>
           </div>
           <div class="mt-3 grid grid-cols-2 gap-3">
-            <WheelPicker v-model="weightInteger" :options="weightIntegerOptions" @update:model-value="growthTouched = true" />
-            <WheelPicker v-model="weightDecimal" :options="digitOptions" @update:model-value="growthTouched = true" />
+            <WheelPicker v-model="weightInteger" :options="weightIntegerOptions" @update:model-value="weightConfirmed = true" />
+            <WheelPicker v-model="weightDecimal" :options="digitOptions" @update:model-value="weightConfirmed = true" />
           </div>
-          <p class="text-xs text-ios-secondary text-center mt-3">有效范围 2.0 - 30.0 kg</p>
+          <p class="text-xs text-ios-secondary text-center mt-3">有效范围 0.5 - 60.0 kg</p>
+          <button v-if="!weightConfirmed" class="mt-3 w-full text-sm text-ios-blue" @click="weightConfirmed = true">确认当前体重</button>
         </div>
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <label class="text-sm font-medium text-ios-secondary">测量时间</label>
@@ -310,10 +311,10 @@ async function onSubmit() {
       <button
         data-testid="save-record"
         class="w-full py-3.5 rounded-2xl bg-ios-green text-white font-semibold active:scale-95 transition-transform duration-150 disabled:opacity-60"
-        :disabled="submitting || (isSupplement && !selectedSupplement) || (isExercise && (!exerciseTypes.length || !exerciseAmount))"
+        :disabled="submitting || saved || (isGrowth && (!growthConfirmed || !growthValid)) || (isSupplement && !selectedSupplement) || (isExercise && (!exerciseTypes.length || !exerciseAmount))"
         @click="onSubmit"
       >
-        {{ submitting ? '保存中…' : '保存记录' }}
+        {{ saved ? '已保存' : submitting ? '保存中…' : '保存记录' }}
       </button>
     </div>
   </div>

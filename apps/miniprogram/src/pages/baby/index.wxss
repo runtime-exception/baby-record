@@ -1,6 +1,7 @@
-.babyIdRow { margin-top: 0; align-items: center; }
-.babyIdLine { display: flex; align-items: baseline; gap: 12rpx; min-width: 0; }
-.babyIdValue { font-size: calc(var(--font, 30rpx) - 2rpx); font-weight: 650; overflow-wrap: anywhere; }
+.babyIdRow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16rpx; margin-top: 0; }
+.babyIdLabel { white-space: nowrap; }
+.babyIdValue { min-width: 0; overflow: hidden; font-size: calc(var(--font, 30rpx) - 8rpx); font-weight: 650; white-space: nowrap; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+button.babyIdCopy { flex: none; justify-self: end; width: auto; margin: 0; padding: 8rpx 0 8rpx 8rpx; white-space: nowrap; }
 .birthMetrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16rpx; }
 .identityPicker { margin-top: 10rpx; }
 .birthMetrics input { padding-left: 12rpx; padding-right: 12rpx; }

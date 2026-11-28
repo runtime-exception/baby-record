@@ -32,3 +32,17 @@ export function ensureSleepEndNotInFuture(endTime: Date, now = new Date()): void
     throw new BusinessException(ErrorCode.PARAM_INVALID, '结束时间不能晚于当前时间');
   }
 }
+
+export function sleepOverlappingRange(babyId: string, start: Date, end: Date) {
+  return {
+    babyId,
+    startTime: { lte: end },
+    OR: [{ endTime: { gt: start } }, { startTime: { gte: start }, endTime: null }],
+  };
+}
+
+export function sleepMinutesInRange(sleep: { startTime: Date; endTime: Date | null }, start: Date, end: Date) {
+  if (!sleep.endTime) return 0;
+  const elapsed = (time: number) => Math.floor(Math.max(0, time - sleep.startTime.getTime()) / 60_000);
+  return Math.max(0, elapsed(Math.min(sleep.endTime.getTime(), end.getTime() + 1)) - elapsed(start.getTime()));
+}

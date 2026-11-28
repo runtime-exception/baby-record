@@ -1,1 +1,1 @@
-{"navigationStyle":"custom","enablePullDownRefresh":true}
+{"navigationStyle":"custom","enablePullDownRefresh":true,"usingComponents":{"record-form":"/components/record-form/index"}}

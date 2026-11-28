@@ -5,7 +5,7 @@ import { CreateGrowthDto } from './dto/create-growth.dto';
 import { UpdateGrowthDto } from './dto/update-growth.dto';
 import { QueryGrowthDto, GrowthTrendQueryDto } from './dto/query-growth.dto';
 import { PaginatedResult } from '../../common/dto/pagination.dto';
-import { BabyIdPipe } from '../../common/pipes/baby-id.pipe';
+import { parseBabyId } from '../../common/utils/baby-id.util';
 
 @ApiTags('身高体重记录')
 @Controller('growths')
@@ -26,8 +26,8 @@ export class GrowthController {
 
   @Get('latest')
   @ApiOperation({ summary: '最新一次身高体重记录' })
-  findLatest(@Query('babyId', BabyIdPipe) babyId: string): Promise<GrowthVo | null> {
-    return this.growthService.findLatest(babyId);
+  findLatest(@Query() query: GrowthTrendQueryDto): Promise<GrowthVo | null> {
+    return this.growthService.findLatest(parseBabyId(query.babyId), query.metric);
   }
 
   @Get('trend')

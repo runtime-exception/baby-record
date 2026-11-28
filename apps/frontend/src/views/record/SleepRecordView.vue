@@ -58,7 +58,7 @@ const quickSleepOptions = [
 
 async function refreshOngoing() {
   if (babyStore.currentBaby) {
-    await recordStore.checkOngoing(babyStore.currentBaby.id);
+    await recordStore.checkOngoing(babyStore.currentBaby.id).catch(() => {});
   }
 }
 
@@ -69,8 +69,8 @@ function onVisibility() {
   }
 }
 
-onMounted(async () => {
-  await refreshOngoing();
+onMounted(() => {
+  void refreshOngoing();
   timer = setInterval(() => {
     now.value = Date.now();
   }, 30000);

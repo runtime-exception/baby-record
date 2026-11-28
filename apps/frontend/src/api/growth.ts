@@ -14,10 +14,11 @@ export interface GrowthPayload {
 export const growthApi = {
   list: (params: { babyId: string; startDate?: string; endDate?: string; page?: number; pageSize?: number }) =>
     http.get<PaginatedResult<GrowthRecordVo>>('/growths', params),
-  latest: (babyId: string) => http.get<GrowthRecordVo | null>('/growths/latest', { babyId }),
+  latest: (babyId: string, metric?: GrowthMetric) => http.get<GrowthRecordVo | null>('/growths/latest', { babyId, metric }),
   trend: (babyId: string, metric: GrowthMetric) =>
     http.get<GrowthTrendVo>('/growths/trend', { babyId, metric }),
   create: (data: GrowthPayload) => http.post<GrowthRecordVo>('/growths', data),
-  update: (id: number, data: Partial<GrowthPayload>) => http.patch<GrowthRecordVo>(`/growths/${id}`, data),
+  update: (id: number, data: Partial<Omit<GrowthPayload, 'height' | 'weight' | 'headCircumference'>> & Partial<Pick<GrowthRecordVo, 'height' | 'weight' | 'headCircumference'>>) =>
+    http.patch<GrowthRecordVo>(`/growths/${id}`, data),
   remove: (id: number) => http.delete<void>(`/growths/${id}`),
 };

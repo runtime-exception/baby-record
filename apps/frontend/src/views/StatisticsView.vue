@@ -21,6 +21,8 @@ const range = ref<RangeOpt>('7d');
 const startDate = ref(Date.now() - 6 * 86400000);
 const endDate = ref(Date.now());
 const loading = ref(false);
+const statsFailed = ref(false);
+let statsRequest = 0;
 
 const feedingChart = ref<ChartResult | null>(null);
 const sleepChart = ref<ChartResult | null>(null);
@@ -32,6 +34,8 @@ const supplementTrendChart = ref<ChartResult | null>(null);
 const heightTrend = ref<GrowthTrendVo | null>(null);
 const weightTrend = ref<GrowthTrendVo | null>(null);
 const growthLoading = ref(false);
+const growthFailed = ref(false);
+let growthRequest = 0;
 
 const rangeOptions: { label: string; value: RangeOpt }[] = [
   { label: '7天', value: '7d' },
@@ -55,7 +59,9 @@ function buildParams(): StatsParams {
 async function loadAll() {
   const baby = babyStore.currentBaby;
   if (!baby) return;
+  const request = ++statsRequest;
   loading.value = true;
+  statsFailed.value = false;
   try {
     const params = buildParams();
     const [f, s, d, supStats, supTrend] = await Promise.all([
@@ -65,13 +71,16 @@ async function loadAll() {
       statisticsApi.supplement(params),
       chartApi.supplement(params),
     ]);
+    if (request !== statsRequest) return;
     feedingChart.value = f;
     sleepChart.value = s;
     diaperChart.value = d;
     supplementStats.value = supStats;
     supplementTrendChart.value = supTrend;
+  } catch {
+    if (request === statsRequest) statsFailed.value = true;
   } finally {
-    loading.value = false;
+    if (request === statsRequest) loading.value = false;
   }
 }
 
@@ -152,16 +161,21 @@ const diaperOption = computed(() => {
 async function loadGrowth() {
   const baby = babyStore.currentBaby;
   if (!baby) return;
+  const request = ++growthRequest;
   growthLoading.value = true;
+  growthFailed.value = false;
   try {
     const [h, w] = await Promise.all([
       growthApi.trend(baby.id, 'height'),
       growthApi.trend(baby.id, 'weight'),
     ]);
+    if (request !== growthRequest) return;
     heightTrend.value = h;
     weightTrend.value = w;
+  } catch {
+    if (request === growthRequest) growthFailed.value = true;
   } finally {
-    growthLoading.value = false;
+    if (request === growthRequest) growthLoading.value = false;
   }
 }
 
@@ -293,13 +307,13 @@ function growthStatus(trend: GrowthTrendVo | null) {
 const heightStatus = computed(() => growthStatus(heightTrend.value));
 const weightStatus = computed(() => growthStatus(weightTrend.value));
 
-onMounted(loadAll);
-onMounted(loadGrowth);
+function refresh() { return Promise.all([loadAll(), loadGrowth()]); }
+onMounted(refresh);
 watch([range, startDate, endDate], loadAll);
 </script>
 
 <template>
-  <AppPullToRefresh @refresh="loadAll">
+  <AppPullToRefresh @refresh="refresh">
   <div>
     <AppHeader title="统计" subtitle="宝宝成长趋势" />
 
@@ -314,8 +328,7 @@ watch([range, startDate, endDate], loadAll);
         </div>
       </div>
 
-      <div v-if="loading" class="text-center py-10 text-ios-secondary text-sm">加载中…</div>
-
+      <button v-if="growthFailed" class="w-full py-4 text-ios-blue" @click="loadGrowth">成长趋势加载失败，点击重试</button>
       <template v-else>
         <!-- 身高趋势 -->
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
@@ -389,6 +402,10 @@ watch([range, startDate, endDate], loadAll);
           </p>
         </div>
 
+      </template>
+      <div v-if="loading" class="text-center py-10 text-ios-secondary text-sm">加载中…</div>
+      <button v-else-if="statsFailed" class="w-full py-4 text-ios-blue" @click="loadAll">统计加载失败，点击重试</button>
+      <template v-else>
         <!-- 喂养趋势 -->
         <div class="bg-ios-card rounded-3xl p-4 shadow-card">
           <h3 class="text-sm font-semibold text-ios-label mb-2">🍼 喂养趋势</h3>

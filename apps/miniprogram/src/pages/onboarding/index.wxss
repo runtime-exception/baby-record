@@ -1,0 +1,119 @@
+.onboarding {
+  padding-bottom: calc(72rpx + env(safe-area-inset-bottom));
+}
+
+.onboardingHero {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 38rpx 34rpx;
+}
+
+.heroCopy {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroMark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: #ffffff26;
+  font-size: 48rpx;
+}
+
+.onboardingActions {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 40rpx;
+}
+
+button.onboardingAction {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 26rpx 28rpx;
+  border-radius: var(--radius, 46rpx);
+  background: var(--card, #fff);
+  color: var(--text, #182439);
+  text-align: left;
+  box-shadow: 0 4rpx 18rpx rgba(29, 57, 94, .06);
+}
+
+.actionPressed {
+  opacity: .78;
+}
+
+.actionIcon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  font-size: 38rpx;
+  line-height: 1;
+}
+
+.addIcon {
+  background: #007aff;
+  color: #fff;
+  font-size: 44rpx;
+  font-weight: 600;
+}
+
+.bindIcon {
+  background: #007aff1a;
+}
+
+.actionBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.actionTitle {
+  font-size: calc(var(--font, 30rpx) - 1rpx);
+  font-weight: 600;
+}
+
+.actionCaption {
+  margin-top: 6rpx;
+  color: var(--muted, #64748b);
+  font-size: calc(var(--font, 30rpx) - 7rpx);
+  line-height: 1.45;
+}
+
+.actionChevron {
+  flex: none;
+  color: var(--muted, #8a94a3);
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+button.logoutButton {
+  display: block;
+  box-sizing: border-box;
+  width: 320rpx;
+  margin: 56rpx auto 0;
+  padding: 20rpx 0;
+  border: 1rpx solid #ff453a33;
+  border-radius: 999rpx;
+  background: #ff453a10;
+  color: #ff453a;
+  text-align: center;
+  font-size: calc(var(--font, 30rpx) - 1rpx);
+  font-weight: 500;
+}
+
+.logoutPressed {
+  opacity: .7;
+}

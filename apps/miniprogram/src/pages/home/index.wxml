@@ -1,14 +1,16 @@
-<page-meta page-style="{{appearanceStyle}}" />
+<page-meta page-style="{{appearanceStyle}}{{switcherOpen ? ';overflow:hidden' : ''}}" />
 <view class="screen tabScreen">
   <view wx:if="{{loading && !baby}}" class="empty">加载中…</view>
   <button wx:if="{{error}}" class="error" bindtap="refresh">{{error}} · 点击重试</button>
   <block wx:if="{{baby}}">
     <view class="babyIntro">
-      <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
-      <view wx:else class="avatar">👶</view>
+      <view class="avatarTrigger" bindtap="openSwitcher" hover-class="pressed" aria-role="button" aria-label="切换宝宝">
+        <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
+        <view wx:else class="avatar avatarFallback">👶</view>
+      </view>
       <view class="babyIdentity">
-        <view class="heading">{{baby.nickname || baby.name}}</view>
-        <view class="subtitle">{{baby.age.monthAgeText}}<text wx:if="{{growth}}"> · {{growth}}</text></view>
+        <view class="heading">{{baby.nickname || baby.name}}（{{baby.age.totalMonths}}个月{{baby.age.days}}天）</view>
+        <view wx:if="{{growth}}" class="subtitle">{{growth}}</view>
       </view>
     </view>
     <view wx:for="{{cards}}" wx:key="kind" class="panel dashboardCard {{item.kind}}">
@@ -50,4 +52,51 @@
       <text class="linkChevron">›</text>
     </button>
   </block>
+  <view wx:if="{{switcherOpen}}" class="switcherOverlay {{switcherExpanded ? 'expanded' : ''}}">
+    <view class="switcherBackdrop" bindtap="closeSwitcher" catchtouchmove="noop"></view>
+    <view class="babySwitchSheet" style="{{switcherStyle}}" aria-role="dialog" aria-label="切换宝宝">
+      <view class="switchHeader title">切换宝宝</view>
+      <scroll-view class="switchScroll" scroll-y>
+        <view wx:if="{{!switchCards.length}}" class="muted switchLoading">加载中…</view>
+        <view
+          wx:for="{{switchCards}}"
+          wx:key="id"
+          class="switchCard {{item.id === baby.id ? 'switchCardActive' : ''}}"
+          style="background: {{item.theme}};"
+          data-id="{{item.id}}"
+          bindtap="chooseBaby"
+          hover-class="pressed"
+        >
+          <view class="switchTop">
+            <view class="switchPortrait">
+              <image wx:if="{{item.avatar}}" class="switchAvatar" src="{{item.avatar}}" mode="aspectFill" />
+              <view wx:else class="switchAvatar switchAvatarFallback">👶</view>
+            </view>
+            <view class="switchIdentity">
+              <view class="switchNameLine">
+                <text class="switchName">{{item.displayName}}</text>
+                <text class="switchBadge">{{item.genderLabel}}</text>
+                <text wx:if="{{item.id === baby.id}}" class="switchCurrent">当前</text>
+              </view>
+              <view class="switchBirth">出生 {{item.birthday}}</view>
+            </view>
+          </view>
+          <view class="switchBottom">
+            <view class="switchAge">
+              <view class="switchAgeLine"><text class="switchAgeNumber">{{item.age.totalMonths}}</text><text>个月{{item.age.days}}天</text></view>
+              <view class="switchAgeCaption">共 {{item.age.totalDays}} 天</view>
+            </view>
+            <view class="switchMetrics">
+              <text>{{item.heightText}}</text>
+              <text>{{item.weightText}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="switchActions">
+        <button class="switchAdd" bindtap="addBaby">＋ 添加宝宝</button>
+        <button class="switchClose" bindtap="closeSwitcher">关闭</button>
+      </view>
+    </view>
+  </view>
 </view>

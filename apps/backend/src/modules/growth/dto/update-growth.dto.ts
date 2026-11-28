@@ -9,7 +9,7 @@ export class UpdateGrowthDto {
   @IsNumber()
   @Min(20)
   @Max(160)
-  height?: number;
+  height?: number | null;
 
   @ApiPropertyOptional({ example: 7.4, description: '体重(kg)，范围 0.5-60' })
   @IsOptional()
@@ -17,7 +17,7 @@ export class UpdateGrowthDto {
   @IsNumber()
   @Min(0.5)
   @Max(60)
-  weight?: number;
+  weight?: number | null;
 
   @ApiPropertyOptional({ example: 36.5, description: '头围(cm)，预留' })
   @IsOptional()
@@ -25,7 +25,7 @@ export class UpdateGrowthDto {
   @IsNumber()
   @Min(20)
   @Max(80)
-  headCircumference?: number;
+  headCircumference?: number | null;
 
   @ApiPropertyOptional({ example: '2026-08-04T10:30:00.000Z', description: '测量时间' })
   @IsOptional()

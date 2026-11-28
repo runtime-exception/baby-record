@@ -1,7 +1,8 @@
 # 宝宝成长记录服务 · docker-compose
 #
-# 模式 A（开箱即用，推荐快速体验）：
-#   docker-compose up -d --build
+# 模式 A（内置 PostgreSQL）：
+#   cp .env.example .env
+#   设置 DATABASE_PASSWORD 并清空 DATABASE_URL 后运行 docker compose up -d --build
 #   应用启动时执行 Prisma 迁移，连接内置 PostgreSQL。
 #
 # 模式 B（连接外部 PostgreSQL）：
@@ -16,9 +17,7 @@ services:
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-baby_record}
       POSTGRES_USER: ${DATABASE_USERNAME:-baby_record}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-this-database-password}
-    ports:
-      - "3308:5432"
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
     volumes:
       - baby-pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -28,7 +27,9 @@ services:
       retries: 10
 
   app:
-    build: .
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
     container_name: baby-record
     restart: unless-stopped
     ports:
@@ -47,7 +48,7 @@ services:
       - DATABASE_PORT=5432
       - DATABASE_NAME=${DATABASE_NAME:-baby_record}
       - DATABASE_USERNAME=${DATABASE_USERNAME:-baby_record}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-change-this-database-password}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
       - DATABASE_URL=${DATABASE_URL:-}
     depends_on:
       postgres:

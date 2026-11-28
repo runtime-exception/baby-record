@@ -535,6 +535,7 @@ export interface DailyRecords {
   activity: ActivityVo[];
   temperature: TemperatureVo[];
   foodAllergy: FoodAllergyRecordVo[];
+  growth?: GrowthRecordVo[];
 }
 
 // ============ 记录人本地缓存 ============

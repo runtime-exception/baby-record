@@ -1,6 +1,8 @@
 .babyIntro { display: flex; align-items: center; gap: 22rpx; margin-bottom: 48rpx; padding-right: 166rpx; min-height: 108rpx; }
 .babyIntro .avatar { width: 100rpx; height: 100rpx; border: 5rpx solid var(--card); background: #cfe8ff; }
+.avatarTrigger { position: relative; flex: none; overflow: hidden; border-radius: 50%; }
 .babyIdentity { min-width: 0; overflow-wrap: break-word; }
+.babyIdentity .subtitle { line-height: 1.45; }
 .dashboardCard { padding: 38rpx; --tone: var(--muted); }
 .dashboardCardHeader .muted { flex: 1; display: flex; align-items: center; gap: 12rpx; }
 .dashboardIcon { font-size: 38rpx; line-height: 1; }
@@ -35,17 +37,71 @@ button.homeLink {
 .linkChevron { flex: none; color: var(--muted); font-size: 34rpx; line-height: 1; }
 .linkTitle { font-weight: 600; font-size: calc(var(--font, 30rpx) - 3rpx); }
 .allergy, .quickCaption { margin-top: 52rpx; }
-.homeShortcuts { grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6rpx; padding: 28rpx 20rpx; }
+.homeShortcuts { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6rpx; padding: 28rpx 20rpx; }
 .homeShortcuts button { background: transparent; padding: 0; }
 .homeShortcuts .shortcutIcon { width: 100rpx; max-width: 100%; height: 100rpx; line-height: 100rpx; border-radius: 50%; background: var(--input); margin: 0 auto 10rpx; }
-.homeShortcuts .feeding { background: #f5a53d25; }
-.homeShortcuts .diaper { background: #4487ee25; }
-.homeShortcuts .sleep { background: #ab61dd25; }
+.homeShortcuts .supplement { background: #f5a53d25; }
+.homeShortcuts .foodAllergy { background: #ab61dd25; }
+.homeShortcuts .bath { background: #4487ee25; }
 .homeShortcuts .other { background: #66bd6325; }
-.homeShortcuts .temperature { background: #e6496825; }
 .pressed { opacity: .72; }
 
 .temperatureWarning { color: #ed9839; background: #ed983920; border-radius: 28rpx; padding: 18rpx; margin-top: 18rpx; font-size: calc(var(--font, 30rpx) - 3rpx); }
 .allergyBackdrop { position: fixed; z-index: 20; inset: 0; display: flex; align-items: flex-end; background: #00000070; }
 .allergySheet { box-sizing: border-box; padding: 35rpx 38rpx; width: 100%; max-height: 75vh; border-radius: 42rpx 42rpx 0 0; background: var(--card); }
 .closeAllergy { width: 70rpx; justify-content: flex-end; }
+
+.switcherOverlay { position: fixed; z-index: 40; inset: 0; }
+.switcherBackdrop { position: absolute; inset: 0; background: #16223372; opacity: 0; transition: opacity .24s var(--anchor-collapse-fade); }
+.switcherOverlay.expanded .switcherBackdrop { opacity: 1; transition-timing-function: ease; }
+.babySwitchSheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 28rpx 30rpx 24rpx;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--bg,#f2f2f7);
+  box-shadow: 0 20rpx 70rpx rgba(20,39,67,.22);
+  transform: translate(-50%, -50%) translate(var(--avatar-x), var(--avatar-y)) scale(var(--avatar-scale-x), var(--avatar-scale-y));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--switcher-duration) var(--anchor-collapse-easing),
+    border-radius var(--switcher-duration) var(--anchor-collapse-fade),
+    opacity var(--switcher-duration) var(--anchor-collapse-fade);
+}
+.switcherOverlay.expanded .babySwitchSheet {
+  transform: translate(-50%, -50%);
+  border-radius: 40rpx;
+  opacity: 1;
+  pointer-events: auto;
+  transition-timing-function: var(--anchor-expand-easing), ease, ease;
+}
+.switchHeader { flex: none; padding: 4rpx 6rpx 8rpx; }
+.switchLoading { padding: 36rpx 0; text-align: center; }
+.switchScroll { flex: 1; height: 0; min-height: 0; }
+.switchCard { box-sizing: border-box; margin-top: 18rpx; padding: 28rpx; border-radius: 36rpx; color: #fff; overflow: hidden; }
+.switchCardActive { box-shadow: 0 0 0 4rpx #ffffff8f inset, 0 4rpx 18rpx rgba(29,57,94,.12); }
+.switchTop { display: flex; align-items: center; gap: 20rpx; }
+.switchPortrait { flex: none; width: 100rpx; height: 100rpx; overflow: hidden; border-radius: 50%; }
+.switchAvatar { display: block; width: 100rpx; height: 100rpx; border: 4rpx solid #ffffff70; border-radius: 50%; background: #ffffff42; }
+.switchAvatarFallback { display: grid; place-items: center; box-sizing: border-box; font-size: 52rpx; }
+.switchIdentity { flex: 1; min-width: 0; }
+.switchNameLine { display: flex; align-items: center; flex-wrap: wrap; gap: 10rpx; }
+.switchName { max-width: 100%; font-size: 34rpx; font-weight: 650; overflow-wrap: anywhere; }
+.switchBadge { flex: none; padding: 7rpx 14rpx; border-radius: 999rpx; color: #fff; background: #ffffff36; font-size: 22rpx; white-space: nowrap; }
+.switchCurrent { flex: none; padding: 7rpx 14rpx; border-radius: 999rpx; color: #3167c7; background: #ffffffd9; font-size: 22rpx; white-space: nowrap; }
+.switchBirth { margin-top: 8rpx; color: #ffffffe0; font-size: calc(var(--font, 30rpx) - 4rpx); }
+.switchBottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 16rpx; margin-top: 28rpx; }
+.switchAge { flex: none; min-width: 0; color: #ffffffe0; }
+.switchAgeLine { display: flex; align-items: baseline; white-space: nowrap; }
+.switchAgeNumber { margin-right: 6rpx; color: #fff; font-size: calc(var(--font, 30rpx) + 26rpx); font-weight: 700; }
+.switchAgeCaption { margin-top: 2rpx; color: #ffffffe0; font-size: calc(var(--font, 30rpx) - 6rpx); white-space: nowrap; }
+.switchMetrics { display: flex; flex: none; flex-direction: column; align-items: flex-start; gap: 4rpx; margin-left: auto; color: #ffffffe8; font-size: calc(var(--font, 30rpx) - 6rpx); line-height: 1.35; white-space: nowrap; }
+.switchActions { flex: none; display: flex; flex-direction: column; gap: 12rpx; margin-top: 18rpx; }
+button.switchAdd, button.switchClose { box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 16rpx 0; border-radius: 999rpx; background: var(--card,#fff); }
+button.switchAdd { color: var(--accent,#007aff); border: 2rpx dashed var(--line,#c9d8ea); font-weight: 600; }
+button.switchClose { color: var(--muted,#66666f); }

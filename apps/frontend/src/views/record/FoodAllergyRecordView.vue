@@ -11,7 +11,6 @@ import { foodApi } from '@/api/food';
 import { foodAllergyApi } from '@/api/food-allergy';
 import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
-import { useDashboardStore } from '@/stores/dashboard';
 import {
   ALLERGY_CONCLUSION_LABELS,
   ALLERGY_SYMPTOMS,
@@ -30,7 +29,6 @@ const message = useAppFeedback();
 const dialog = useAppDialog();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
-const dashboardStore = useDashboardStore();
 const editingId = computed(() => Number(route.params.id) || null);
 
 const foods = ref<FoodVo[]>([]);
@@ -40,6 +38,7 @@ const exposureTime = ref(Date.now());
 const finalConclusion = ref<AllergyConclusion | null>(null);
 const remark = ref('');
 const submitting = ref(false);
+const saved = ref(false);
 const observations = reactive<FoodAllergyObservations>(
   Object.fromEntries(ALLERGY_SYMPTOMS.map((item) => [item.key, 'UNOBSERVED'])) as FoodAllergyObservations,
 );
@@ -72,6 +71,7 @@ async function load() {
 }
 
 async function save() {
+  if (submitting.value || saved.value) return;
   const baby = babyStore.currentBaby;
   const user = userStore.currentUser;
   if (!baby || !user) return message.error('请先选择宝宝与身份');
@@ -79,46 +79,42 @@ async function save() {
   if (!selectedFoodId) return message.warning('请选择辅食');
   if (!finalConclusion.value) return message.warning('请确认最终结论');
 
-  const run = async () => {
-    submitting.value = true;
-    try {
-      const common = {
-        exposureTime: new Date(exposureTime.value).toISOString(),
-        observations: { ...observations },
-        finalConclusion: finalConclusion.value!,
-        remark: remark.value.trim() || undefined,
-      };
-      if (editingId.value) {
-        await foodAllergyApi.update(editingId.value, {
-          ...common,
-          ...(selectedFoodId !== originalFoodId.value && { foodId: selectedFoodId }),
-        });
-      } else {
-        await foodAllergyApi.create({
-          ...common,
-          babyId: baby.id,
-          foodId: selectedFoodId,
-          creatorId: user.id,
-        });
-      }
-      await dashboardStore.fetch(baby.id);
-      message.success(editingId.value ? '排敏记录已更新' : '排敏记录已保存');
-      router.push(editingId.value ? '/history' : '/');
-    } finally {
-      submitting.value = false;
+  submitting.value = true;
+  try {
+    if (finalConclusion.value !== scoreResult.value.conclusion) {
+      const confirmed = await dialog.confirm({
+        title: '结论与系统建议不同',
+        content: `系统建议为“${ALLERGY_CONCLUSION_LABELS[scoreResult.value.conclusion]}”，仍按你的结论保存吗？`,
+        positiveText: '按我的结论保存',
+        negativeText: '返回检查',
+      });
+      if (!confirmed) return;
     }
-  };
-
-  if (finalConclusion.value !== scoreResult.value.conclusion) {
-    const confirmed = await dialog.confirm({
-      title: '结论与系统建议不同',
-      content: `系统建议为“${ALLERGY_CONCLUSION_LABELS[scoreResult.value.conclusion]}”，仍按你的结论保存吗？`,
-      positiveText: '按我的结论保存',
-      negativeText: '返回检查',
-    });
-    if (!confirmed) return;
+    const common = {
+      exposureTime: new Date(exposureTime.value).toISOString(),
+      observations: { ...observations },
+      finalConclusion: finalConclusion.value!,
+      remark: remark.value.trim() || undefined,
+    };
+    if (editingId.value) {
+      await foodAllergyApi.update(editingId.value, {
+        ...common,
+        ...(selectedFoodId !== originalFoodId.value && { foodId: selectedFoodId }),
+      });
+    } else {
+      await foodAllergyApi.create({
+        ...common,
+        babyId: baby.id,
+        foodId: selectedFoodId,
+        creatorId: user.id,
+      });
+    }
+    saved.value = true;
+    message.success(editingId.value ? '排敏记录已更新' : '排敏记录已保存');
+    await router.push(editingId.value ? '/history' : '/');
+  } finally {
+    submitting.value = false;
   }
-  await run();
 }
 
 onMounted(load);
@@ -187,7 +183,7 @@ onMounted(load);
         <AppInput v-model:value="remark" textarea :rows="2" placeholder="选填，如进食量、照片位置、就医情况" class="mt-2" />
       </section>
 
-      <button class="w-full rounded-2xl bg-ios-orange py-3.5 font-semibold text-white disabled:opacity-60" :disabled="submitting" @click="save">{{ submitting ? '保存中…' : '保存排敏记录' }}</button>
+      <button class="w-full rounded-2xl bg-ios-orange py-3.5 font-semibold text-white disabled:opacity-60" :disabled="submitting || saved" @click="save">{{ saved ? '已保存' : submitting ? '保存中…' : '保存排敏记录' }}</button>
     </div>
   </div>
 </template>

@@ -2,30 +2,41 @@
 <view class="screen tabScreen">
   <view class="pageIntro"><view class="heading">我的</view><view class="subtitle">宝宝档案与设置</view></view>
   <button class="error" wx:if="{{error}}" bindtap="refresh">{{error}} · 点击重试</button>
+  <view class="empty" wx:elif="{{!baby}}">正在加载宝宝档案…</view>
   <block wx:if="{{baby}}">
-    <view class="panel profileHero">
-      <view class="row heroTop">
-        <view class="portrait" bindtap="chooseAvatar">
-          <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
-          <view wx:else class="avatar">👶</view>
-          <view wx:if="{{baby.membership.isAdmin}}" class="portraitEdit">{{avatarUploading ? '上传中' : '更换'}}</view>
-        </view>
-        <view class="profileIdentity">
-          <view class="heroNameLine">
-            <text class="title heroName">{{displayName}}</text>
-            <text class="heroBadge">{{gender}}</text>
+    <view class="babyStack" style="padding-bottom: {{stackBottom}}rpx;">
+      <view
+        wx:for="{{stackCards}}"
+        wx:key="id"
+        class="panel profileHero babyStackCard"
+        style="top: {{item.top}}rpx; bottom: {{item.bottom}}rpx; left: {{item.left}}rpx; right: {{item.right}}rpx; z-index: {{item.z}}; background: {{item.theme}};"
+        bindtap="openSwitcher"
+      ></view>
+      <view class="panel profileHero profileHeroMain" style="margin-right: {{stackReserve}}rpx; background: {{heroTheme}};" bindtap="openSwitcher" hover-class="pressed">
+        <button class="heroEditCircle" wx:if="{{baby.membership.isAdmin}}" catchtap="edit" aria-label="编辑宝宝">✎</button>
+        <view class="row heroTop">
+          <view class="portrait" catchtap="chooseAvatar">
+            <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
+            <view wx:else class="avatar avatarFallback">👶</view>
+            <view wx:if="{{baby.membership.isAdmin}}" class="portraitEdit">{{avatarUploading ? '上传中' : '更换'}}</view>
           </view>
-          <view class="heroCaption heroBirthday">出生 {{baby.birthday}}</view>
+          <view class="profileIdentity">
+            <view class="heroNameLine">
+              <text class="title heroName">{{displayName}}</text>
+              <text class="heroBadge">{{gender}}</text>
+            </view>
+            <view class="heroCaption heroBirthday">出生 {{baby.birthday}}</view>
+          </view>
         </view>
-      </view>
-      <view class="heroBottom">
-        <view class="ageBlock">
-          <view class="ageLine"><text class="ageNumber">{{baby.age.totalMonths}}</text><text>个月{{baby.age.days}}天</text></view>
-          <view class="heroCaption">共 {{baby.age.totalDays}} 天</view>
-        </view>
-        <view class="heroActions">
-          <button class="heroPill heroEditPill" wx:if="{{baby.membership.isAdmin}}" aria-label="编辑宝宝" bindtap="edit">✎</button>
-          <button class="heroPill heroSwitchPill" wx:if="{{list.length > 1}}" bindtap="openSwitcher">切换</button>
+        <view class="heroBottom">
+          <view class="ageBlock">
+            <view class="ageLine"><text class="ageNumber">{{baby.age.totalMonths}}</text><text>个月{{baby.age.days}}天</text></view>
+            <view class="heroCaption">共 {{baby.age.totalDays}} 天</view>
+          </view>
+          <view class="heroGrowth">
+            <text>{{heightText}}</text>
+            <text>{{weightText}}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -54,11 +65,6 @@
       </view></view>
       <view class="row line"><text>老年人模式</text><switch checked="{{appearance.senior}}" color="#007aff" bindchange="senior" /></view>
     </view>
-    <view class="sectionCaption profileCaption">宝宝与家庭</view>
-    <view class="panel familyPanel">
-      <view class="row"><text class="babyId">宝宝 ID {{baby.id}}</text><button class="textAction" bindtap="copyId">复制</button></view>
-      <view class="row line"><button class="textAction" bindtap="add">添加宝宝</button><button class="textAction" bindtap="bind">绑定宝宝</button></view>
-    </view>
     <view class="panel"><view class="title">出生信息</view>
       <view class="row line"><text>体重</text><text>{{baby.birthWeight || '—'}} kg</text></view>
       <view class="row line"><text>身高</text><text>{{baby.birthHeight || '—'}} cm</text></view>
@@ -68,25 +74,33 @@
     </view>
   </block>
   <button class="danger section logoutButton" bindtap="logout">退出登录</button>
-  <view wx:if="{{switcherOpen}}" class="sheetBackdrop" bindtap="closeSwitcher">
-    <view class="switchSheet" catchtap="noop">
+  <view
+    wx:if="{{switcherOpen}}"
+    class="stackSwitcherBackdrop {{switcherExpanded ? 'visible' : ''}}"
+    bindtap="closeSwitcher"
+    catchtouchmove="noop"
+  >
+    <view class="stackSwitcherPanel {{switcherExpanded ? 'expanded' : ''}}" style="{{switcherStyle}}" catchtap="noop">
+      <view class="stackSwitcherSeed" style="background: {{heroTheme}};"></view>
+      <view class="stackSwitcherContent {{switcherExpanded ? 'visible' : ''}}">
       <view class="switchHeader">
         <text class="title">切换宝宝</text>
         <button class="switchClose" bindtap="closeSwitcher">关闭</button>
       </view>
       <view wx:if="{{!switchCards.length}}" class="muted switchLoading">加载中…</view>
-      <scroll-view class="switchScroll" style="height: {{switchScrollHeight}}" scroll-y>
+      <scroll-view class="switchScroll stackSwitchScroll" scroll-y>
         <view
           wx:for="{{switchCards}}"
           wx:key="id"
           class="panel profileHero switchCard {{item.id === baby.id ? 'switchCardActive' : ''}}"
+          style="background: {{item.theme}};"
           data-id="{{item.id}}"
           bindtap="chooseBaby"
         >
           <view class="row heroTop">
             <view class="portrait">
               <image wx:if="{{item.avatar}}" class="avatar" src="{{item.avatar}}" mode="aspectFill" />
-              <view wx:else class="avatar">👶</view>
+              <view wx:else class="avatar avatarFallback">👶</view>
             </view>
             <view class="profileIdentity">
               <view class="heroNameLine">
@@ -101,10 +115,59 @@
               <view class="ageLine"><text class="ageNumber">{{item.age.totalMonths}}</text><text>个月{{item.age.days}}天</text></view>
               <view class="heroCaption">共 {{item.age.totalDays}} 天</view>
             </view>
+            <view class="heroGrowth">
+              <text>{{item.heightText}}</text>
+              <text>{{item.weightText}}</text>
+            </view>
           </view>
         </view>
       </scroll-view>
-      <button class="switchAdd" bindtap="add">＋ 新增宝宝</button>
+      <button class="switchAdd" bindtap="add">＋ 添加宝宝</button>
+      </view>
+    </view>
+  </view>
+  <view
+    wx:if="{{avatarEditor.open}}"
+    class="avatarEditorBackdrop"
+    catchtap="cancelAvatarEdit"
+    catchtouchmove="noop"
+  >
+    <view class="avatarEditorCard" catchtap="noop">
+      <view class="avatarEditorTitle">调整头像</view>
+      <view class="avatarEditorHint">拖动图片选择展示区域，滑杆可放大</view>
+      <view class="avatarCropViewport" style="width: {{avatarEditor.viewport}}px; height: {{avatarEditor.viewport}}px;">
+        <image
+          class="avatarCropImage"
+          src="{{avatarEditor.path}}"
+          mode="scaleToFill"
+          style="width: {{avatarEditor.displayWidth}}px; height: {{avatarEditor.displayHeight}}px; left: {{avatarEditor.left}}px; top: {{avatarEditor.top}}px; transform: translate({{avatarEditor.offsetX}}px, {{avatarEditor.offsetY}}px) scale({{avatarEditor.scale}});"
+          bindtouchstart="avatarTouchStart"
+          catchtouchmove="avatarTouchMove"
+          bindtouchend="avatarTouchEnd"
+          bindtouchcancel="avatarTouchEnd"
+        />
+        <view class="avatarCropGuide"></view>
+      </view>
+      <slider
+        class="avatarZoom"
+        min="100"
+        max="300"
+        step="1"
+        value="{{avatarEditor.scalePercent}}"
+        activeColor="#3474db"
+        backgroundColor="#dce7f5"
+        block-size="20"
+        bindchanging="adjustAvatarZoom"
+        bindchange="adjustAvatarZoom"
+      />
+      <view class="avatarEditorScale">
+        <text>缩小</text>
+        <text>放大</text>
+      </view>
+      <view class="avatarEditorActions">
+        <button class="avatarEditorCancel" disabled="{{avatarEditor.saving}}" bindtap="cancelAvatarEdit">取消</button>
+        <button class="avatarEditorConfirm" disabled="{{avatarEditor.saving}}" bindtap="confirmAvatarEdit">{{avatarEditor.saving ? '保存中…' : '使用这张'}}</button>
+      </view>
     </view>
   </view>
   <canvas canvas-id="avatarCanvas" class="avatarCanvas" />

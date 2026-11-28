@@ -1,10 +1,30 @@
-<page-meta page-style="{{appearanceStyle}}" />
-<view class="screen tabScreen">
+<page-meta page-style="{{appearanceStyle}}{{typeMounted ? ';overflow:hidden' : ''}}" />
+<view class="screen tabScreen recordTimelineScreen">
   <view class="heading pageIntro">记录</view>
-  <view class="shortcuts">
-    <button wx:for="{{quick}}" wx:key="kind" data-kind="{{item.kind}}" bindtap="create">
-      <text class="shortcutIcon">{{item.icon}}</text>{{item.label}}
-    </button>
-  </view>
   <include src="./timeline.wxml" />
+</view>
+<view class="addRecordBar">
+  <button id="addRecord" class="addRecordButton" bindtap="openCreation">＋ 添加记录</button>
+</view>
+
+<view wx:if="{{typeMounted}}" class="recordCreationLayer">
+  <view class="creationBackdrop {{typeOpen ? 'visible' : ''}}" bindtap="cancelCreation" catchtouchmove="viewSheet"></view>
+  <view class="recordTypesPosition">
+    <view id="recordTypes" class="recordCreationSurface recordTypes {{typeOpen ? 'expanded' : ''}}" style="{{typeStyle}}" aria-role="dialog" aria-label="记录类型" aria-hidden="{{!!formEntry}}">
+      <view class="title">记录类型</view>
+      <scroll-view class="recordTypesScroll" scroll-y>
+        <view class="recordTypesGrid">
+          <button wx:for="{{recordOptions}}" wx:key="type" id="record-type-{{item.type}}" data-type="{{item.type}}" bindtap="openRecordType">
+            <text class="shortcutIcon">{{item.icon}}</text>{{item.label}}
+          </button>
+        </view>
+      </scroll-view>
+      <button class="creationCancel" bindtap="cancelCreation">取消</button>
+    </view>
+  </view>
+  <view wx:if="{{formEntry}}" class="recordCreationSurface recordCreateForm {{formOpen ? 'expanded' : ''}}" style="{{formStyle}}">
+    <scroll-view class="recordFormScroll" scroll-y>
+      <record-form entry="{{formEntry}}" embedded="{{true}}" bind:back="backFromForm" bind:cancel="cancelCreation" bind:saved="recordSaved" />
+    </scroll-view>
+  </view>
 </view>

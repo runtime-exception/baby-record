@@ -1,6 +1,31 @@
 <page-meta page-style="{{appearanceStyle}}" />
-<view class="screen">
-  <view class="panel hero"><view class="heading">宝宝成长记录</view><view class="subtitle muted">添加宝宝，或加入家人已经创建的记录。</view></view>
-  <view class="panel stack"><button class="primary" bindtap="add">添加宝宝</button><button bindtap="bind">绑定已有宝宝</button></view>
-  <button class="plain section" bindtap="logout">退出登录</button>
+<view class="screen onboarding">
+  <view class="panel hero onboardingHero">
+    <view class="heroCopy">
+      <view class="heading">宝宝成长记录</view>
+      <view class="subtitle muted">添加宝宝，或加入家人已经创建的记录。</view>
+    </view>
+    <view class="heroMark">👶</view>
+  </view>
+
+  <view class="onboardingActions">
+    <button class="onboardingAction" hover-class="actionPressed" bindtap="add">
+      <view class="actionIcon addIcon">＋</view>
+      <view class="actionBody">
+        <view class="actionTitle">添加宝宝</view>
+        <view class="actionCaption">新建宝宝档案，开始记录成长</view>
+      </view>
+      <view class="actionChevron">›</view>
+    </button>
+    <button class="onboardingAction" hover-class="actionPressed" bindtap="bind">
+      <view class="actionIcon bindIcon">🔗</view>
+      <view class="actionBody">
+        <view class="actionTitle">绑定已有宝宝</view>
+        <view class="actionCaption">用宝宝 ID 或认领码加入家庭</view>
+      </view>
+      <view class="actionChevron">›</view>
+    </button>
+  </view>
+
+  <button class="logoutButton" hover-class="logoutPressed" bindtap="logout">退出登录</button>
 </view>

@@ -12,6 +12,14 @@ export interface DateRange {
 }
 
 export class DateRangeUtil {
+  private static parse(value: string): Date {
+    const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!parts) return new Date(value);
+    const local = new Date(0);
+    local.setFullYear(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+    local.setHours(0, 0, 0, 0);
+    return local;
+  }
   /** 根据 range 类型解析范围 */
   static resolve(range: RangeType, startDate?: string, endDate?: string): DateRange {
     const today = new Date();
@@ -32,9 +40,9 @@ export class DateRangeUtil {
         if (!startDate || !endDate) {
           throw new BusinessException(ErrorCode.PARAM_MISSING, 'custom 范围需提供 startDate 与 endDate');
         }
-        start = new Date(startDate);
+        start = this.parse(startDate);
         start.setHours(0, 0, 0, 0);
-        const customEnd = new Date(endDate);
+        const customEnd = this.parse(endDate);
         customEnd.setHours(23, 59, 59, 999);
         return { start, end: customEnd };
       default:
@@ -45,7 +53,7 @@ export class DateRangeUtil {
 
   /** 某一整天的范围（date: YYYY-MM-DD） */
   static day(date: string): DateRange {
-    const d = new Date(date);
+    const d = this.parse(date);
     return {
       start: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0),
       end: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999),

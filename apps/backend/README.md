@@ -47,29 +47,28 @@ docs/             design schema.sql er-diagram swagger-usage api-overview
 ### 2. 安装依赖
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
 ### 3. 配置环境变量
 
 ```bash
 cp .env.example .env
-# 按需修改 .env 中的数据库连接信息
+# 设置数据库连接信息及 DATABASE_PASSWORD
 ```
 
 > 密码中的 `@` 在 `DATABASE_URL` 中需编码为 `%40`。若仅填写分项字段（`DATABASE_HOST` 等），应用启动时会自动拼接并 URL 编码。
 
-### 4. 数据库迁移与种子数据
+### 4. 数据库迁移
 
 ```bash
-# 生成 Prisma Client + 创建表
-npx prisma migrate dev --name init
-
-# 初始化 6 个记录人身份 + 示例宝宝
-npm run prisma:seed
+# 生成 Prisma Client 并应用现有迁移
+pnpm prisma:generate
+pnpm build
+node dist/prisma/deploy.js
 ```
 
-> 若不便使用 migrate，也可直接执行 `docs/schema.sql` 建表。
+登录后可在「添加宝宝」创建档案并初始化家庭身份。
 
 ### 5. 启动
 

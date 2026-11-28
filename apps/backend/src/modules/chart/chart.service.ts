@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DateRangeUtil, RangeType } from '../../common/utils/date-range.util';
 import { StatsQueryDto } from '../../common/dto/stats-query.dto';
+import { sleepMinutesInRange, sleepOverlappingRange } from '../sleep/sleep-rules';
 
 export interface ChartResult {
   xAxis: string[];
@@ -39,12 +40,17 @@ export class ChartService {
   /** 睡眠趋势：每日 总睡眠分钟 */
   async sleep(query: StatsQueryDto): Promise<ChartResult> {
     const { start, end } = DateRangeUtil.resolve(query.range as RangeType, query.startDate, query.endDate);
-    const list = await this.prisma.sleep.findMany({ where: { babyId: query.babyId, startTime: { gte: start, lte: end } } });
+    const list = await this.prisma.sleep.findMany({ where: sleepOverlappingRange(query.babyId, start, end) });
     const days = DateRangeUtil.eachDay(start, end);
     const map: Record<string, number> = {};
     for (const s of list) {
-      const day = DateRangeUtil.toDateString(s.startTime);
-      map[day] = (map[day] || 0) + (s.durationMinutes ?? 0);
+      if (!s.endTime) continue;
+      const first = new Date(Math.max(start.getTime(), s.startTime.getTime()));
+      const last = new Date(Math.min(end.getTime(), s.endTime.getTime()));
+      for (const day of DateRangeUtil.eachDay(first, last)) {
+        const bounds = DateRangeUtil.day(day);
+        map[day] = (map[day] || 0) + sleepMinutesInRange(s, bounds.start, bounds.end);
+      }
     }
     return {
       xAxis: days,

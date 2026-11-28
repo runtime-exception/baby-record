@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useBabyStore } from '@/stores/baby';
 
@@ -135,9 +136,12 @@ const router = createRouter({
   },
 });
 
+export const failedNavigation = ref<string | null>(null);
+
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
   if (!await auth.ensureChecked()) {
+    failedNavigation.value = null;
     return to.name === 'login' ? true : { name: 'login', query: { redirect: to.fullPath } };
   }
 
@@ -146,8 +150,10 @@ router.beforeEach(async (to) => {
   try {
     await babies.loadBabies();
   } catch {
+    failedNavigation.value = to.fullPath;
     return false;
   }
+  failedNavigation.value = null;
   if (to.name === 'login') return { name: babies.currentBaby ? 'dashboard' : 'onboarding' };
   if (!babies.currentBaby && !guestRoutes.includes(String(to.name))) return { name: 'onboarding' };
   if (babies.currentBaby && to.name === 'onboarding') return { name: 'dashboard' };

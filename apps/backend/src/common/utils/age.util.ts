@@ -17,26 +17,20 @@ export class AgeUtil {
   static calc(birthday: Date | string, now: Date = new Date()): AgeInfo {
     const birth = birthday instanceof Date ? birthday : new Date(birthday);
     // 仅比较日期（忽略时分秒）
-    const b = new Date(birth.getFullYear(), birth.getMonth(), birth.getDate());
-    const n = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let years = n.getFullYear() - b.getFullYear();
-    let months = n.getMonth() - b.getMonth();
-    let days = n.getDate() - b.getDate();
-
-    if (days < 0) {
-      months -= 1;
-      // 上一个月的总天数
-      const prevMonthDays = new Date(n.getFullYear(), n.getMonth(), 0).getDate();
-      days += prevMonthDays;
-    }
-    if (months < 0) {
-      years -= 1;
-      months += 12;
-    }
-
-    const totalDays = Math.floor((n.getTime() - b.getTime()) / 86400000);
-    const totalMonths = years * 12 + months;
+    const birthDay = birth.getUTCDate();
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const birthdayAt = (offset: number) => {
+      const month = birth.getUTCMonth() + offset;
+      const lastDay = new Date(Date.UTC(birth.getUTCFullYear(), month + 1, 0)).getUTCDate();
+      return Date.UTC(birth.getUTCFullYear(), month, Math.min(birthDay, lastDay));
+    };
+    let totalMonths = (now.getFullYear() - birth.getUTCFullYear()) * 12 + now.getMonth() - birth.getUTCMonth();
+    if (today < birthdayAt(totalMonths)) totalMonths--;
+    totalMonths = Math.max(0, totalMonths);
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    const days = Math.max(0, (today - birthdayAt(totalMonths)) / 86400000);
+    const totalDays = Math.max(0, (today - birthdayAt(0)) / 86400000);
 
     return {
       years,

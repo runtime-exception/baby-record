@@ -1,5 +1,5 @@
 <page-meta page-style="{{appearanceStyle}}" />
-<view class="screen tabScreen">
+<view class="screen detailScreen">
   <view class="detailHeader">
     <button class="backButton" aria-label="返回" bindtap="back"><view class="backChevron"></view></button>
     <view class="heading">{{title}}</view>

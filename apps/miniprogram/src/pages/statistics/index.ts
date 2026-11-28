@@ -130,7 +130,13 @@ Page({
   data: { options: rangeOptions, range: '7d' as RangeType, startDate: dateString(), endDate: dateString(), today: dateString(),
     charts: [] as Chart[], overview: null as StatisticsOverview | null, loading: false, error: '' },
   active: 0,
-  onShow() { applyAppearance(this, 'tab'); void this.refresh(); },
+  customDates: false,
+  onShow() {
+    applyAppearance(this, 'tab');
+    const today = dateString();
+    this.setData({ today, ...(!this.customDates && { startDate: today, endDate: today }) });
+    void this.refresh();
+  },
   onHide() { this.active++; this.setData({ charts: [], overview: null }); },
   async onPullDownRefresh() { try { await this.refresh(); } finally { wx.stopPullDownRefresh(); } },
   async refresh() {
@@ -170,6 +176,7 @@ Page({
   },
   chooseRange(event: WxEvent) { this.setData({ range: event.currentTarget.dataset.range as RangeType }); void this.refresh(); },
   changeDate(event: WxInput) {
+    this.customDates = true;
     const date = event.detail.value;
     if (event.currentTarget.dataset.field === 'start') this.setData({ startDate: date, endDate: date > this.data.endDate ? date : this.data.endDate });
     else this.setData({ endDate: date });

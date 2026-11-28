@@ -17,6 +17,7 @@ import { supplementApi } from '@/api/supplement';
 import { activityApi } from '@/api/activity';
 import { temperatureApi } from '@/api/temperature';
 import { foodAllergyApi } from '@/api/food-allergy';
+import { growthApi } from '@/api/growth';
 import { useRouter } from 'vue-router';
 import { useBabyStore } from '@/stores/baby';
 import { useThemeStore } from '@/stores/theme';
@@ -102,7 +103,7 @@ function buildItems(d: DailyRecords): TimelineEntry[] {
       detail:
         SLEEP_TYPE_LABELS[s.sleepType] +
         ' · ' +
-        (s.ongoing ? '睡眠中' : minutesToText(s.durationMinutes ?? 0)),
+        ((s.ongoing ?? s.endTime === null) ? '睡眠中' : minutesToText(s.durationMinutes ?? 0)),
       colorClass: 'bg-ios-purple',
     }),
   );
@@ -145,6 +146,18 @@ function buildItems(d: DailyRecords): TimelineEntry[] {
       colorClass: record.finalConclusion === 'ALLERGIC' ? 'bg-ios-pink' : record.finalConclusion === 'POSSIBLE' ? 'bg-ios-orange' : 'bg-ios-green',
     }),
   );
+  for (const growth of d.growth ?? []) {
+    arr.push({
+      type: 'growth', raw: growth, time: growth.measureTime, icon: '📏', title: '成长测量',
+      detail: [
+        growth.height != null ? `身高 ${growth.height} cm` : '',
+        growth.weight != null ? `体重 ${growth.weight} kg` : '',
+        growth.headCircumference != null ? `头围 ${growth.headCircumference} cm` : '',
+        growth.remark,
+      ].filter(Boolean).join(' · '),
+      colorClass: 'bg-ios-blue',
+    });
+  }
   return arr.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 }
 
@@ -179,6 +192,7 @@ async function removeEntry(e: TimelineEntry) {
     else if (e.type === 'activity') await activityApi.remove(r.id);
     else if (e.type === 'temperature') await temperatureApi.remove(r.id);
     else if (e.type === 'foodAllergy') await foodAllergyApi.remove(r.id);
+    else if (e.type === 'growth') await growthApi.remove(r.id);
     message.success('已删除');
     load();
   } catch {
@@ -227,7 +241,7 @@ function creatorRole(item: TimelineEntry): string {
 const typeOptions: { label: string; value: 'all' | TimelineEntry['type'] }[] = [
   { label: '全部', value: 'all' }, { label: '喂养', value: 'feeding' }, { label: '纸尿裤', value: 'diaper' },
   { label: '睡眠', value: 'sleep' }, { label: '补剂', value: 'supplement' }, { label: '活动', value: 'activity' }, { label: '体温', value: 'temperature' },
-  { label: '排敏', value: 'foodAllergy' },
+  { label: '排敏', value: 'foodAllergy' }, { label: '成长', value: 'growth' },
 ];
 onMounted(load);
 watch(dateRange, load, { deep: true });

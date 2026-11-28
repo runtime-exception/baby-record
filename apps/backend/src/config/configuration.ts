@@ -16,7 +16,7 @@ export default () => {
 
   const url =
     process.env.DATABASE_URL ||
-    `postgresql://${username}:${encodeURIComponent(password)}@${host}:${port}/${name}?schema=public`;
+    `postgresql://${encodeURIComponent(username || '')}:${encodeURIComponent(password)}@${host}:${port}/${encodeURIComponent(name || '')}?schema=public`;
 
   // 运行时确保 Prisma 可读取 DATABASE_URL
   if (!process.env.DATABASE_URL) {

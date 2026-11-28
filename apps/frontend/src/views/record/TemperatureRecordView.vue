@@ -8,17 +8,17 @@ import WheelPicker from '@/components/form/WheelPicker.vue';
 import { temperatureApi } from '@/api/temperature';
 import { useBabyStore } from '@/stores/baby';
 import { useUserStore } from '@/stores/user';
-import { useDashboardStore } from '@/stores/dashboard';
 
 const router = useRouter();
 const message = useAppFeedback();
 const babyStore = useBabyStore();
 const userStore = useUserStore();
-const dashboardStore = useDashboardStore();
 const time = ref(Date.now());
 const integer = ref(36);
 const decimal = ref(5);
 const submitting = ref(false);
+const saved = ref(false);
+const edited = ref(false);
 const integerOptions = Array.from({ length: 7 }, (_, offset) => {
   const value = 35 + offset;
   return { label: String(value), value, disabled: value < 36 };
@@ -30,8 +30,8 @@ const valid = computed(() => temperature.value >= 36 && temperature.value <= 41)
 onMounted(async () => {
   const baby = babyStore.currentBaby;
   if (!baby) return;
-  const latest = await temperatureApi.latest(baby.id);
-  if (latest) {
+  const latest = await temperatureApi.latest(baby.id).catch(() => null);
+  if (latest && !edited.value) {
     const [integerPart, fraction] = latest.temperature.toFixed(1).split('.');
     integer.value = Number(integerPart);
     decimal.value = Number(fraction);
@@ -39,15 +39,16 @@ onMounted(async () => {
 });
 
 async function submit() {
+  if (submitting.value || saved.value) return;
   const baby = babyStore.currentBaby;
   const user = userStore.currentUser;
   if (!baby || !user || !valid.value) { message.warning('请选择 36.0℃ 至 41.0℃ 的有效体温'); return; }
   submitting.value = true;
   try {
     await temperatureApi.create({ babyId: baby.id, temperature: temperature.value, measureTime: new Date(time.value).toISOString(), creatorId: user.id });
-    await dashboardStore.fetch(baby.id);
+    saved.value = true;
     message.success('体温记录已保存');
-    router.push('/');
+    await router.push('/');
   } finally { submitting.value = false; }
 }
 </script>
@@ -60,8 +61,8 @@ async function submit() {
         <p class="text-sm font-medium text-ios-secondary">宝宝体温</p>
         <p class="text-4xl num-display font-bold text-ios-label text-center my-5">{{ temperature.toFixed(1) }}℃</p>
         <div class="grid grid-cols-2 gap-3">
-          <WheelPicker v-model="integer" :options="integerOptions" />
-          <WheelPicker v-model="decimal" :options="digitOptions" />
+          <WheelPicker v-model="integer" :options="integerOptions" @update:model-value="edited = true" />
+          <WheelPicker v-model="decimal" :options="digitOptions" @update:model-value="edited = true" />
         </div>
         <p class="text-xs text-ios-secondary text-center mt-3">有效范围 36.0℃ - 41.0℃</p>
       </div>
@@ -69,8 +70,8 @@ async function submit() {
         <label class="text-sm font-medium text-ios-secondary">测量时间</label>
         <DateTimePicker v-model="time" class="mt-2 w-full" />
       </div>
-      <button class="w-full py-3.5 rounded-2xl bg-ios-pink text-white font-semibold disabled:opacity-60" :disabled="submitting || !valid" @click="submit">
-        {{ submitting ? '保存中…' : '保存体温记录' }}
+      <button class="w-full py-3.5 rounded-2xl bg-ios-pink text-white font-semibold disabled:opacity-60" :disabled="submitting || saved || !valid" @click="submit">
+        {{ saved ? '已保存' : submitting ? '保存中…' : '保存体温记录' }}
       </button>
     </div>
   </div>
